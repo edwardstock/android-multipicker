@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="mp_colorPrimaryDark">#FF12A8C8</color>
+    <color name="mp_colorPrimary">#FF15BBDE</color>
+    <color name="mp_colorAccent">#FF15BBDE</color>
+    <color name="mp_colorHighlight">#FFD4CBF2</color>
+    <color name="mp_textColorPrimary">#FF000000</color>
+    <!--// support-->
+    <color name="mp_colorTextPrimary">#FF000000</color>
+    <color name="mp_textColorSecondary">#FFFFFFFF</color>
+    <color name="mp_textColorSecondaryHalf">#89ffffff</color>
+    <color name="mp_textColorPrimaryHalf">#89000000</color>
+    <color name="mp_textColorGreen">#FF5AC07B</color>
+    <color name="mp_textDark">#FF303030</color>
+
+    <color name="mp_white">#FFFFFF</color>
+    <color name="mp_grey">#9E9E9E</color>
+    <color name="mp_black_alpha_50">#80000000</color>
+    <color name="mp_black_alpha_aa">#AA000000</color>
+    <color name="mp_teal">#009688</color>
+    <color name="mp_white_grey">#d4d4d4</color>
+</resources>

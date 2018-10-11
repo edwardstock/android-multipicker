@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".picker.ui.PickerActivity"
+    >
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/list"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/selection_root"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layoutManager="GridLayoutManager"
+        tools:listitem="@layout/mp_item_image"
+        tools:spanCount="3"
+        />
+
+    <com.edwardstock.multipicker.internal.widgets.MpColoredProgressBar
+        android:id="@+id/progress"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/list"
+        app:layout_constraintEnd_toEndOf="@id/list"
+        app:layout_constraintStart_toStartOf="@id/list"
+        app:layout_constraintTop_toTopOf="@id/list"
+        app:mp_color="@color/mp_white_grey"
+        tools:visibility="visible"
+        />
+
+    <LinearLayout
+        android:id="@+id/selection_root"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        >
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@drawable/mp_selection_view_shadow"
+            />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/selection_root_sub"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/mp_white"
+            android:minHeight="56dp"
+            >
+
+            <ImageView
+                android:id="@+id/mp_selection_action_clear"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="@dimen/mp_spacing"
+                android:layout_marginEnd="0dp"
+                android:alpha="0"
+                tools:alpha="1"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintHorizontal_chainStyle="spread"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/mp_ic_clear_grey"
+                />
+
+            <TextView
+                android:id="@+id/mp_selection_title"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginStart="@dimen/mp_margin_large"
+                android:layout_marginEnd="@dimen/mp_margin_large"
+                android:gravity="center_vertical"
+                android:textColor="?android:attr/textColorPrimary"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/mp_selection_action_done"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias=".5"
+                app:layout_constraintHorizontal_bias="0"
+                tools:text="2 photos and 2 videos and 3 files and et cetera"
+                />
+
+            <ImageView
+                android:id="@+id/mp_selection_action_done"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="0dp"
+                android:layout_marginEnd="@dimen/mp_spacing_double"
+                android:padding="4dp"
+                android:tint="@color/mp_colorAccent"
+                android:alpha="0"
+                tools:alpha="1"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/mp_selection_title"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/mp_ic_done_white"
+                />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

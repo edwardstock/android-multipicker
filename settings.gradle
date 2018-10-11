@@ -1,0 +1,1 @@
+include ':app', ':multipicker', ':moxy', ':stub-reflector', ':moxy-compiler', ':moxy-androidx', ':stub-androidx'

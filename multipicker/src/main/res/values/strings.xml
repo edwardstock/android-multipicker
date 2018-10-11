@@ -1,0 +1,11 @@
+<resources>
+    <string name="mp_gif">GIF</string>
+    <string name="mp_video">Видео</string>
+    <string name="mp_content_desc_image">Image</string>
+    <string name="mp_transition_image">mp_preview_transition</string>
+    <string name="mp_camera">Фото</string>
+    <string name="mp_error_create_video_file">Не удалось записать видео</string>
+    <string name="mp_error_create_image_file">Не удалось сделать фото</string>
+    <string name="mp_done">Готово</string>
+    <string name="mp_chooser_title">Выберите фото</string>
+</resources>

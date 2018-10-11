@@ -1,0 +1,56 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    
+    repositories {
+        google()
+        jcenter()
+        mavenCentral()
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.2.0'
+        classpath 'com.jakewharton:butterknife-gradle-plugin:9.0.0-SNAPSHOT'
+        
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
+        maven { url "https://jitpack.io" }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+        maven { url 'http://oss.jfrog.org/artifactory/oss-snapshot-local/' }
+    }
+}
+
+ext {
+    supportLibVersion = "28.0.0"
+    buildTools = "28.0.3"
+
+
+    targetVersionCode = 45
+    targetVersionName = "1.5.5"
+
+    deps = [
+            android       : 'com.google.android:android:1.6_r2',
+            javapoet      : 'com.squareup:javapoet:1.9.0',
+            junit         : 'junit:junit:4.12',
+            mockito       : 'org.mockito:mockito-core:1.10.19',
+            truth         : 'com.google.truth:truth:0.34',
+            robolectric   : 'org.robolectric:robolectric:3.0',
+            compiletesting: 'com.google.testing.compile:compile-testing:0.11',
+            asm           : ['org.ow2.asm:asm:6.0', 'org.ow2.asm:asm-util:6.0'],
+            autoservice   : 'com.google.auto.service:auto-service:1.0-rc3',
+            autocommon    : 'com.google.auto:auto-common:0.8',
+            guava         : 'com.google.guava:guava:21.0',
+    ]
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
