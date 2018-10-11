@@ -32,13 +32,7 @@ public class DirsPresenter extends BaseFsPresenter<DirsView> implements MediaFil
     @Override
     public void updateFiles(MediaFileLoader loader) {
         getViewState().showProgress();
-        loader.loadDeviceImages(
-                true,
-                mConfig.isShowPhotos(),
-                mConfig.isShowVideos(),
-                Collections.emptyList(),
-                this
-        );
+        loader.loadDeviceImages(mConfig, this);
     }
 
     public void handleExtras(Bundle intent) {
@@ -53,8 +47,11 @@ public class DirsPresenter extends BaseFsPresenter<DirsView> implements MediaFil
 
     @Override
     public void onFilesLoadedSuccess(List<MediaFile> images, List<Dir> dirList) {
+        getViewState().showEmpty(true);
         new Handler(Looper.getMainLooper()).post(() -> {
             getViewState().hideProgress();
+        getViewState().showEmpty(dirList.isEmpty());
+
             mAdapter.setData(dirList);
             mAdapter.notifyDataSetChanged();
         });

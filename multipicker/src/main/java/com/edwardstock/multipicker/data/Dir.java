@@ -2,7 +2,7 @@ package com.edwardstock.multipicker.data;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import androidx.core.util.ObjectsCompat;
+import android.support.v4.util.ObjectsCompat;
 
 import java.util.ArrayList;
 import java.util.List;

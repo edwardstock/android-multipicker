@@ -1,9 +1,19 @@
 package com.edwardstock.multipicker.picker.adapters;
 
+import android.content.Context;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
+import android.support.constraint.ConstraintSet;
+import android.support.transition.AutoTransition;
+import android.support.transition.TransitionManager;
+import android.support.transition.TransitionSet;
+import android.support.v4.view.ViewCompat;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,28 +21,27 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
+import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.MediaFile;
-import com.edwardstock.multipicker.PickerConfig;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import androidx.annotation.NonNull;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.recyclerview.selection.ItemDetailsLookup;
 import androidx.recyclerview.selection.Selection;
 import androidx.recyclerview.selection.SelectionTracker;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.transition.AutoTransition;
-import androidx.transition.TransitionManager;
-import androidx.transition.TransitionSet;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import timber.log.Timber;
@@ -46,6 +55,8 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
     private SelectionTracker<MediaFile> mSelectionTracker;
     private List<MediaFile> mSelectedInit;
     private PickerConfig mConfig;
+    private MediaFile mWaitintForMeasure = null;
+    private OnMeasuredListener mOnMeasuredListener;
 
     public FilesAdapter(PickerConfig config, List<MediaFile> selectedFiles, OnMediaClickListener itemClickListener) {
         mConfig = config;
@@ -75,9 +86,12 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int position) {
+        final Context ctx = viewHolder.itemView.getContext();
         final MediaFile file = mItems.get(position);
         final boolean isSelected = mSelectionTracker.isSelected(file);
         boolean isEnableSelection = isSelected || mSelectionTracker.getSelection().size() > 0;
+        ViewCompat.setTransitionName(viewHolder.imageView, ctx.getResources().getString(R.string.mp_transition_image)+String.valueOf(file.getId()));
+
 
         ColorMatrix matrix = new ColorMatrix();
         matrix.setSaturation(.8F);
@@ -87,6 +101,29 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
 
         Glide.with(viewHolder.imageView)
                 .load(file.getPath())
+                .listener(new RequestListener<Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@android.support.annotation.Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                        if (mWaitintForMeasure == null || mOnMeasuredListener == null) {
+                            return false;
+                        }
+                        if (file.equals(mWaitintForMeasure)) {
+                            mOnMeasuredListener.onMeasured(mWaitintForMeasure);
+                        }
+                        return false;
+                    }
+
+                    @Override
+                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                        if (mWaitintForMeasure == null || mOnMeasuredListener == null) {
+                            return false;
+                        }
+                        if (file.equals(mWaitintForMeasure)) {
+                            mOnMeasuredListener.onMeasured(mWaitintForMeasure);
+                        }
+                        return false;
+                    }
+                })
                 .apply(new RequestOptions().error(R.drawable.mp_image_placeholder))
                 .transition(DrawableTransitionOptions.withCrossFade())
                 .into(viewHolder.imageView);
@@ -97,7 +134,6 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
         if (isSelected) {
             target.constrainPercentHeight(R.id.mp_image_view_root, .80F);
             target.constrainPercentWidth(R.id.mp_image_view_root, .80F);
-
         } else {
             target.constrainPercentHeight(R.id.mp_image_view_root, 1.0F);
             target.constrainPercentWidth(R.id.mp_image_view_root, 1.0F);
@@ -111,8 +147,6 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
             viewHolder.fileTypeIcon.setImageResource(R.drawable.mp_ic_play_circle_filled);
             viewHolder.fileTypeIcon.setVisibility(View.VISIBLE);
         }
-
-//        target.setAlpha(R.id.mp_file_type_icon, showFileTypeIndicator ? 1.F : 0F);
 
         if (isEnableSelection) {
             target.setAlpha(R.id.image_selection, 1F);
@@ -131,28 +165,41 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
             }
         });
 
+        boolean needChangeCmp = isSelected && isEnableSelection;
+        boolean cached = mAnimatedCache.containsKey(position) && mAnimatedCache.get(position);
+
+
+
 
         Timber.d("Update item: %d, selection enable: %b", viewHolder.getAdapterPosition(), isEnableSelection);
         new Handler(Looper.getMainLooper()).post(() -> {
 
-            TransitionSet allover = new TransitionSet();
-            allover.addTransition(new AutoTransition());
-            allover.setDuration(100);
 
-            TransitionSet check = new TransitionSet();
-            check.addTarget(R.id.image_selection);
-            check.setDuration(150);
+//            if(needChangeCmp != cached) {
+                mAnimatedCache.put(position, needChangeCmp);
 
-            allover.addTransition(check);
+                TransitionSet allover = new TransitionSet();
+                allover.addTransition(new AutoTransition());
+                allover.setDuration(100);
 
-            if(mConfig.isEnableSelectionAnimation()) {
-                TransitionManager.beginDelayedTransition(viewHolder.root, allover);
-            }
+                TransitionSet check = new TransitionSet();
+                check.addTarget(R.id.image_selection);
+                check.setDuration(150);
 
-            target.applyTo(viewHolder.root);
+                allover.addTransition(check);
+
+                if (mConfig.isEnableSelectionAnimation()) {
+                    TransitionManager.beginDelayedTransition(viewHolder.root, allover);
+                }
+
+                mAnimatedCache.put(position, isSelected);
+
+                target.applyTo(viewHolder.root);
+//            }
         });
-
     }
+
+    private Map<Integer, Boolean> mAnimatedCache = new HashMap<>();
 
     public List<MediaFile> getItems() {
         return mItems;
@@ -175,6 +222,15 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
     @Deprecated
     public Selection<MediaFile> getSelectedImages() {
         return mSelectionTracker.getSelection();
+    }
+
+    public void setOnFileMeasuredListener(MediaFile file, OnMeasuredListener listener) {
+        mWaitintForMeasure = file;
+        mOnMeasuredListener = listener;
+    }
+
+    public interface OnMeasuredListener {
+        void onMeasured(MediaFile file);
     }
 
     public interface OnMediaClickListener {

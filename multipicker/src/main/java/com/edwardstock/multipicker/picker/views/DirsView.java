@@ -1,11 +1,12 @@
 package com.edwardstock.multipicker.picker.views;
 
+import android.support.v7.widget.RecyclerView;
+
 import com.arellomobile.mvp.viewstate.strategy.AddToEndSingleStrategy;
 import com.arellomobile.mvp.viewstate.strategy.StateStrategyType;
 import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.internal.views.ErrorView;
 
-import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * android-multipicker. 2018
@@ -17,4 +18,5 @@ public interface DirsView extends ErrorView, FileSystemView {
     void startFiles(Dir dir);
     void showProgress();
     void hideProgress();
+    void showEmpty(boolean show);
 }

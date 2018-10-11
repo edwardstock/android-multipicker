@@ -2,14 +2,13 @@ package com.edwardstock.multipicker.data;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
+import android.support.v4.util.ObjectsCompat;
 
 import com.edwardstock.multipicker.internal.PickerUtils;
 
 import java.io.File;
 import java.util.Locale;
-
-import androidx.annotation.NonNull;
-import androidx.core.util.ObjectsCompat;
 
 /**
  * android-multipicker. 2018
@@ -33,6 +32,10 @@ public class MediaFile implements Parcelable {
     private String mPath;
     private VideoInfo mVideoInfo;
     private MediaSize mMediaSize;
+
+    public MediaFile(String path) {
+        mPath = path;
+    }
 
     public MediaFile(long id, String name, String path) {
         mId = id;

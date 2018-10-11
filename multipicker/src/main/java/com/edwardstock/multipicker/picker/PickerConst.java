@@ -1,13 +1,5 @@
 package com.edwardstock.multipicker.picker;
 
-import androidx.recyclerview.selection.SelectionTracker;
-import androidx.recyclerview.widget.RecyclerView;
-import android.view.View;
-
-import com.arellomobile.mvp.MvpView;
-import com.edwardstock.multipicker.data.Dir;
-import com.edwardstock.multipicker.data.MediaFile;
-
 /**
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]

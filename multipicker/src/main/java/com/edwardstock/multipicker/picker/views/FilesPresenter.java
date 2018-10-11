@@ -7,16 +7,15 @@ import android.view.View;
 
 import com.annimon.stream.Stream;
 import com.arellomobile.mvp.InjectViewState;
+import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
-import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.adapters.FilesAdapter;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -40,13 +39,7 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
     public void updateFiles(MediaFileLoader loader) {
         getViewState().showProgress();
         Timber.d("Updating files");
-        loader.loadDeviceImages(
-                true,
-                mConfig.isShowPhotos(),
-                mConfig.isShowVideos(),
-                Collections.emptyList(),
-                this
-        );
+        loader.loadDeviceImages(mConfig, this);
     }
 
     public void handleExtras(Bundle bundle) {
@@ -87,7 +80,7 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
     @Override
     public void attachView(FilesView view) {
         super.attachView(view);
-        if(mSelectionCnt == 0) {
+        if (mSelectionCnt == 0) {
             getViewState().setSelectionTitle("Выберите файл");
             getViewState().setSelectionSubmitEnabled(false);
         }
@@ -139,6 +132,10 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
 
     public PickerConfig getConfig() {
         return mConfig;
+    }
+
+    public void setOnFileMeasuredListener(MediaFile file, FilesAdapter.OnMeasuredListener listener) {
+        mAdapter.setOnFileMeasuredListener(file, listener);
     }
 
     @Override

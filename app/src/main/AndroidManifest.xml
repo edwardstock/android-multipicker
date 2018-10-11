@@ -11,6 +11,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning"
+        tools:replace="android:appComponentFactory"
+        android:appComponentFactory="@string/app_name"
         >
         <activity android:name="com.edwardstock.appmultipicker.MainActivity">
             <intent-filter>

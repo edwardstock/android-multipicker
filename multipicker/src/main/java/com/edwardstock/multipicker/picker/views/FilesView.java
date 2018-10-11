@@ -1,17 +1,14 @@
 package com.edwardstock.multipicker.picker.views;
 
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
-import com.arellomobile.mvp.viewstate.strategy.AddToEndSingleStrategy;
 import com.arellomobile.mvp.viewstate.strategy.OneExecutionStateStrategy;
 import com.arellomobile.mvp.viewstate.strategy.StateStrategyType;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.views.ErrorView;
 
-import java.util.List;
-
 import androidx.recyclerview.selection.SelectionTracker;
-import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * android-multipicker. 2018

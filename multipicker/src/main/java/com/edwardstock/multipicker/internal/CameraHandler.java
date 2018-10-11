@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.provider.MediaStore;
+import android.support.annotation.RestrictTo;
+import android.support.v4.content.FileProvider;
 
 import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.data.MediaFile;
@@ -14,8 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import androidx.annotation.RestrictTo;
-import androidx.core.content.FileProvider;
 import timber.log.Timber;
 
 import static com.google.common.base.MoreObjects.firstNonNull;

@@ -6,6 +6,7 @@ import android.media.MediaScannerConnection;
 import com.arellomobile.mvp.MvpView;
 import com.arellomobile.mvp.viewstate.strategy.AddToEndSingleStrategy;
 import com.arellomobile.mvp.viewstate.strategy.StateStrategyType;
+import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.CameraHandler;
 
 /**
@@ -18,6 +19,6 @@ public interface PickerView extends MvpView {
     void captureVideoWithPermissions(CameraHandler cameraHandler, int requestCode);
     void finishCapturePhoto(CameraHandler cameraHandler, Intent intent);
     void finishCaptureVideo(CameraHandler cameraHandler, Intent intent);
-    void scanMedia(String path, MediaScannerConnection.OnScanCompletedListener listener);
+    void scanMedia(MediaFile path, MediaScannerConnection.OnScanCompletedListener listener);
     void startUpdateFiles();
 }

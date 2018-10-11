@@ -6,7 +6,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Environment;
-import androidx.annotation.Nullable;
+import android.support.annotation.Nullable;
 
 import com.edwardstock.multipicker.data.MediaFile;
 
@@ -21,10 +21,6 @@ import java.util.Locale;
 import timber.log.Timber;
 
 public class PickerUtils {
-
-    public static boolean isStringEmpty(@Nullable String str) {
-        return str == null || str.length() == 0;
-    }
 
     public static File createVideoThumbFile(MediaFile file) {
         // External sdcard location

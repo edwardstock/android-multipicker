@@ -2,6 +2,10 @@ package com.edwardstock.multipicker.picker.ui;
 
 import android.Manifest;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,19 +15,15 @@ import android.widget.TextView;
 
 import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.arellomobile.mvp.presenter.PresenterType;
+import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
-import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.views.DirsPresenter;
 import com.edwardstock.multipicker.picker.views.DirsView;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import permissions.dispatcher.NeedsPermission;
@@ -41,6 +41,7 @@ public class DirsFragment extends PickerFileSystemFragment implements DirsView {
     @BindView(R2.id.mp_selection_title) TextView selectionTitle;
     @BindView(R2.id.mp_selection_action_clear) ImageView selectionClearAction;
     @BindView(R2.id.mp_selection_action_done) ImageView selectionDoneAction;
+    @BindView(R2.id.mp_empty_text) TextView emptyText;
     @BindView(R2.id.selection_root) View selectionRoot;
     @BindView(R2.id.progress) ProgressBar progress;
     private PickerConfig mConfig;
@@ -78,6 +79,11 @@ public class DirsFragment extends PickerFileSystemFragment implements DirsView {
     @Override
     public void hideProgress() {
         progress.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void showEmpty(boolean show) {
+        emptyText.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     @Override

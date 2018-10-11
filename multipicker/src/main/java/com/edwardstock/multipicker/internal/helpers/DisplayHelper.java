@@ -1,10 +1,9 @@
 package com.edwardstock.multipicker.internal.helpers;
 
 import android.content.Context;
+import android.support.annotation.Px;
+import android.support.annotation.RestrictTo;
 import android.util.DisplayMetrics;
-
-import androidx.annotation.Px;
-import androidx.annotation.RestrictTo;
 
 /**
  * android-multipicker. 2018

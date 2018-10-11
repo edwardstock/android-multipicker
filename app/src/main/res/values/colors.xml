@@ -4,7 +4,10 @@
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#D81B60</color>
 
-    <color name="mp_colorPrimary">@color/colorPrimary</color>
-    <color name="mp_colorPrimaryDark">@color/colorPrimary</color>
-    <color name="mp_colorAccent">#D81B60</color>
+    <!--<color name="mp_colorPrimary">@color/colorPrimary</color>-->
+    <!--<color name="mp_colorPrimaryDark">@color/colorPrimaryDark</color>-->
+    <!--<color name="mp_colorAccent">#D81B60</color>-->
+    <!--<color name="mp_colorBackground">@android:color/black</color>-->
+    <!--<color name="mp_textColorPrimary">@android:color/white</color>-->
+    <!--<color name="mp_titleTextColor">@color/</color>-->
 </resources>

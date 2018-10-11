@@ -4,7 +4,9 @@
     <color name="mp_colorPrimary">#FF15BBDE</color>
     <color name="mp_colorAccent">#FF15BBDE</color>
     <color name="mp_colorHighlight">#FFD4CBF2</color>
+    <color name="mp_colorControlNormal">@android:color/white</color>
     <color name="mp_textColorPrimary">#FF000000</color>
+    <color name="mp_colorBackground">@android:color/white</color>
     <!--// support-->
     <color name="mp_colorTextPrimary">#FF000000</color>
     <color name="mp_textColorSecondary">#FFFFFFFF</color>
@@ -14,7 +16,7 @@
     <color name="mp_textDark">#FF303030</color>
 
     <color name="mp_white">#FFFFFF</color>
-    <color name="mp_grey">#9E9E9E</color>
+    <color name="mp_grey">#979797</color>
     <color name="mp_black_alpha_50">#80000000</color>
     <color name="mp_black_alpha_aa">#AA000000</color>
     <color name="mp_teal">#009688</color>

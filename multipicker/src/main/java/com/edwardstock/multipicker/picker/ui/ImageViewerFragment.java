@@ -1,11 +1,13 @@
 package com.edwardstock.multipicker.picker.ui;
 
-import android.content.Intent;
 import android.content.res.TypedArray;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.ColorInt;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -22,9 +24,6 @@ import com.github.chrisbanes.photoview.PhotoView;
 
 import java.util.Collections;
 
-import androidx.annotation.ColorInt;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 /**
@@ -35,6 +34,8 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
 
     boolean mHiddenControls = false;
     private Dir mDir;
+    private MenuItem mSendMenu;
+    private MediaFile mFile;
 
     public static ImageViewerFragment newInstance(Dir dir, MediaFile file) {
         Bundle args = new Bundle();
@@ -71,8 +72,9 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
 
             act.toolbar.getMenu().removeItem(mSendMenu.getItemId());
 
-            act.getWindow().getDecorView().setBackgroundColor(0xFFFFFFFF);
-            act.getWindow().setBackgroundDrawable(new ColorDrawable(0xFFFFFFFF));
+
+
+            act.getWindow().setBackgroundDrawable(new ColorDrawable(getResources().getColor(R.color.mp_colorBackground)));
             act.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         });
     }
@@ -88,10 +90,6 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
         super.onBackPressed();
     }
 
-
-    private MenuItem mSendMenu;
-    private MediaFile mFile;
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -100,6 +98,8 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
 
         PhotoView imageView = view.findViewById(R.id.mp_photo_view);
         mFile = getArguments().getParcelable(PickerConst.EXTRA_MEDIA_FILE);
+        mDir = getArguments().getParcelable(PickerConst.EXTRA_DIR);
+
 
         safeActivity(act -> {
             Timber.d("Set toolbar color");
@@ -116,23 +116,17 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
             mSendMenu = menu.add(R.string.mp_done);
             mSendMenu.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
             mSendMenu.setIcon(R.drawable.mp_ic_send_white);
-            mSendMenu.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    safeActivity(act-> act.submitResult(Collections.singletonList(mFile)));
-                    return true;
-                }
+            mSendMenu.setOnMenuItemClickListener(item -> {
+                safeActivity(act1 -> act1.submitResult(Collections.singletonList(mFile)));
+                return true;
             });
-
         });
 
+        imageView.setImageURI(Uri.parse(mFile.getPath()));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            imageView.setTransitionName(getString(R.string.mp_transition_image)+String.valueOf(mFile.getId()));
+            imageView.setTransitionName(getString(R.string.mp_transition_image) + String.valueOf(mFile.getId()));
         }
-        mDir = getArguments().getParcelable(PickerConst.EXTRA_DIR);
-
-        imageView.setImageURI(Uri.parse(mFile.getPath()));
 
         imageView.setOnClickListener(v -> {
             if (!mHiddenControls) {

@@ -1,11 +1,10 @@
 package com.edwardstock.multipicker;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
+import android.support.v4.app.Fragment;
 
 import com.edwardstock.multipicker.data.MediaFile;
-import com.edwardstock.multipicker.internal.ActivityBuilder;
 import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.ui.PickerActivity;
 
@@ -13,26 +12,29 @@ import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.List;
 
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
-public final class MultiPicker{
+public final class MultiPicker {
     private PickerConfig mConfig;
+    private WeakReference<Activity> mActivity;
 
-    public static MultiPicker create(Context context) {
+    MultiPicker(Activity activity) {
+        mActivity = new WeakReference<>(activity);
+    }
+
+    public static MultiPicker create(Activity activity) {
+        checkNotNull(activity);
         return new MultiPicker(activity);
     }
 
-    MultiPicker(Context context) {
-        try {
-            Class.forName("androidx.fragment.app.Fragment");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+    public static MultiPicker create(Fragment fragment) {
+        checkNotNull(fragment);
+        checkNotNull(fragment.getActivity());
+        return new MultiPicker(fragment.getActivity());
     }
 
     public static List<MediaFile> handleActivityResult(int resultCode, Intent data) {
@@ -44,15 +46,15 @@ public final class MultiPicker{
     }
 
     public PickerConfig configure() {
-        return mConfig;
+        return new PickerConfig(this);
     }
 
     public void start(int requestCode) {
-//        new PickerActivity.Builder(, mConfig)
-//                .start(requestCode);
+        new PickerActivity.Builder(mActivity.get(), mConfig)
+                .start(requestCode);
     }
 
-    public MultiPicker withConfig(PickerConfig pickerConfig) {
+    MultiPicker withConfig(PickerConfig pickerConfig) {
         mConfig = pickerConfig;
         return this;
     }

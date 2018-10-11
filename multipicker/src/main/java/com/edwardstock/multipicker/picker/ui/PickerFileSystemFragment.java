@@ -1,6 +1,7 @@
 package com.edwardstock.multipicker.picker.ui;
 
 import android.content.Context;
+import android.support.v7.widget.RecyclerView;
 
 import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
@@ -12,7 +13,6 @@ import com.edwardstock.multipicker.picker.views.BaseFsPresenter;
 
 import java.lang.ref.WeakReference;
 
-import androidx.recyclerview.widget.RecyclerView;
 import timber.log.Timber;
 
 /**

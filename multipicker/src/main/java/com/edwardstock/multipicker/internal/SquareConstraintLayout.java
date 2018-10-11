@@ -1,9 +1,9 @@
 package com.edwardstock.multipicker.internal;
 
 import android.content.Context;
+import android.support.constraint.ConstraintLayout;
 import android.util.AttributeSet;
 
-import androidx.constraintlayout.widget.ConstraintLayout;
 
 /**
  * android-multipicker. 2018

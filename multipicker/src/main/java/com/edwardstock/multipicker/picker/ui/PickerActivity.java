@@ -8,37 +8,41 @@ import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.transition.AutoTransition;
+import android.support.transition.ChangeBounds;
+import android.support.transition.ChangeClipBounds;
+import android.support.transition.ChangeImageTransform;
+import android.support.transition.ChangeTransform;
+import android.support.transition.TransitionSet;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.arellomobile.mvp.MvpActivity;
 import com.arellomobile.mvp.MvpAppCompatActivity;
 import com.arellomobile.mvp.presenter.InjectPresenter;
+import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.ActivityBuilder;
 import com.edwardstock.multipicker.internal.CameraHandler;
-import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.internal.views.ErrorView;
-import com.edwardstock.multipicker.picker.views.PickerView;
 import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.views.PickerPresenter;
+import com.edwardstock.multipicker.picker.views.PickerView;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
-import androidx.transition.AutoTransition;
-import androidx.transition.ChangeImageTransform;
-import androidx.transition.TransitionSet;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import permissions.dispatcher.NeedsPermission;
@@ -79,20 +83,20 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
     }
 
     @Override
-    public void scanMedia(String path, MediaScannerConnection.OnScanCompletedListener listener) {
-        String[] paths = {path};
-        String[] mimeTypes = {"video/mp4", "image/jpeg"};
+    public void scanMedia(MediaFile file, MediaScannerConnection.OnScanCompletedListener listener) {
+        String[] paths = {file.getPath()};
+        String[] mimeTypes = {(file.isVideo() ? "video/mp4" : "image/jpeg")};
         MediaScannerConnection.scanFile(getApplicationContext(), paths, mimeTypes, listener);
     }
 
     @Override
     public void onError(CharSequence error) {
-        Toast.makeText((Context) this, error, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, error, Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onError(Throwable t) {
-        Toast.makeText((Context) this, t.getMessage(), Toast.LENGTH_LONG).show();
+        Toast.makeText(this, t.getMessage(), Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -209,14 +213,22 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
                     .replace(R.id.mp_container, fragment, fragment.getClass().getSimpleName());
 
             if(sharedView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                sharedView.setTransitionName(getResources().getString(R.string.mp_transition_image)+String.valueOf(file.getId()));
                 tx.addSharedElement(sharedView, sharedView.getTransitionName());
                 TransitionSet sharedSet = new TransitionSet();
                 sharedSet.addTransition(new ChangeImageTransform());
+                sharedSet.addTransition(new ChangeBounds());
+                sharedSet.addTransition(new ChangeClipBounds());
+                sharedSet.addTransition(new ChangeTransform());
                 TransitionSet commonSet = new TransitionSet();
                 commonSet.addTransition(new AutoTransition());
                 fragment.setSharedElementEnterTransition(sharedSet);
+                fragment.setSharedElementReturnTransition(sharedSet);
+                mFragment.setSharedElementEnterTransition(sharedSet);
+                mFragment.setSharedElementReturnTransition(sharedSet);
                 fragment.setEnterTransition(commonSet);
+                fragment.setReturnTransition(commonSet);
+                mFragment.setEnterTransition(commonSet);
+                mFragment.setReturnTransition(commonSet);
             }
 
             tx.addToBackStack(null).commit();
@@ -228,13 +240,13 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
     void capturePhoto(CameraHandler cameraHandler, int requestCode) {
         Intent intent = cameraHandler.getCameraPhotoIntent(this, getConfig(), mFragment.getCapturedSavePath());
         if (intent == null) {
-            Toast.makeText((Context) this, R.string.mp_error_create_image_file, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.mp_error_create_image_file, Toast.LENGTH_LONG).show();
             return;
         }
         if (intent.resolveActivity(getPackageManager()) != null) {
             startActivityForResult(intent, requestCode);
         } else {
-            Toast.makeText((Context) this, R.string.mp_error_create_image_file, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.mp_error_create_image_file, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -242,13 +254,13 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
     void captureVideo(CameraHandler cameraHandler, int requestCode) {
         Intent intent = cameraHandler.getCameraVideoIntent(this, getConfig(), mFragment.getCapturedSavePath());
         if (intent == null) {
-            Toast.makeText((Context) this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show();
             return;
         }
         if (intent.resolveActivity(getPackageManager()) != null) {
             startActivityForResult(intent, requestCode);
         } else {
-            Toast.makeText((Context) this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show();
+            Toast.makeText(this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -286,11 +298,9 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
         mFragment.onActivityResult(requestCode, resultCode, data);
     }
 
-    public void submitResult(List<MediaFile> files) {
-        //ImmutableList<MediaFile> files = ImmutableList.copyOf(mSelectionTracker.getSelection());
+    public final void submitResult(List<MediaFile> files) {
         Intent intent = new Intent();
         intent.putParcelableArrayListExtra(PickerConst.EXTRA_RESULT_FILES, new ArrayList<>(files));
-
 
         setResult(RESULT_OK, intent);
         finish();
