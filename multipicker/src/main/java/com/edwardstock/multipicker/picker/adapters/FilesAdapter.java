@@ -4,8 +4,6 @@ import android.content.Context;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.drawable.Drawable;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.constraint.ConstraintSet;
@@ -32,6 +30,7 @@ import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.MediaFile;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +56,9 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
     private PickerConfig mConfig;
     private MediaFile mWaitintForMeasure = null;
     private OnMeasuredListener mOnMeasuredListener;
+    private Map<Integer, Boolean> mItemChanged = new HashMap<>();
+    private WeakReference<RecyclerView> mList;
+    private boolean mIsScrolling = false;
 
     public FilesAdapter(PickerConfig config, List<MediaFile> selectedFiles, OnMediaClickListener itemClickListener) {
         mConfig = config;
@@ -85,13 +87,17 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
     }
 
     @Override
+    public long getItemId(int position) {
+        return mItems.get(position).getId();
+    }
+
+    @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int position) {
         final Context ctx = viewHolder.itemView.getContext();
         final MediaFile file = mItems.get(position);
         final boolean isSelected = mSelectionTracker.isSelected(file);
         boolean isEnableSelection = isSelected || mSelectionTracker.getSelection().size() > 0;
-        ViewCompat.setTransitionName(viewHolder.imageView, ctx.getResources().getString(R.string.mp_transition_image)+String.valueOf(file.getId()));
-
+        ViewCompat.setTransitionName(viewHolder.imageView, ctx.getResources().getString(R.string.mp_transition_image) + String.valueOf(file.getId()));
 
         ColorMatrix matrix = new ColorMatrix();
         matrix.setSaturation(.8F);
@@ -165,41 +171,28 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
             }
         });
 
-        boolean needChangeCmp = isSelected && isEnableSelection;
-        boolean cached = mAnimatedCache.containsKey(position) && mAnimatedCache.get(position);
-
-
-
-
         Timber.d("Update item: %d, selection enable: %b", viewHolder.getAdapterPosition(), isEnableSelection);
-        new Handler(Looper.getMainLooper()).post(() -> {
-
-
-//            if(needChangeCmp != cached) {
-                mAnimatedCache.put(position, needChangeCmp);
-
+        if (mList != null && mList.get() != null) {
+            mList.get().post(() -> {
                 TransitionSet allover = new TransitionSet();
                 allover.addTransition(new AutoTransition());
                 allover.setDuration(100);
 
                 TransitionSet check = new TransitionSet();
                 check.addTarget(R.id.image_selection);
-                check.setDuration(150);
+                check.setDuration(120);
 
                 allover.addTransition(check);
+                allover.setOrdering(TransitionSet.ORDERING_TOGETHER);
 
-                if (mConfig.isEnableSelectionAnimation()) {
+                if (mConfig.isEnableSelectionAnimation() && !mIsScrolling) {
                     TransitionManager.beginDelayedTransition(viewHolder.root, allover);
                 }
 
-                mAnimatedCache.put(position, isSelected);
-
                 target.applyTo(viewHolder.root);
-//            }
-        });
+            });
+        }
     }
-
-    private Map<Integer, Boolean> mAnimatedCache = new HashMap<>();
 
     public List<MediaFile> getItems() {
         return mItems;
@@ -227,6 +220,16 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
     public void setOnFileMeasuredListener(MediaFile file, OnMeasuredListener listener) {
         mWaitintForMeasure = file;
         mOnMeasuredListener = listener;
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        mList = new WeakReference<>(recyclerView);
+    }
+
+    public void setIsScrolling(boolean b) {
+        mIsScrolling = b;
     }
 
     public interface OnMeasuredListener {

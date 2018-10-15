@@ -21,4 +21,5 @@
     <color name="mp_black_alpha_aa">#AA000000</color>
     <color name="mp_teal">#009688</color>
     <color name="mp_white_grey">#d4d4d4</color>
+    <color name="mp_viewer_background">@android:color/black</color>
 </resources>

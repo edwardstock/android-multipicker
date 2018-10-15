@@ -5,7 +5,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:id="@+id/fs_root"
     tools:context=".picker.ui.PickerActivity"
+    android:background="@color/mp_colorBackground"
     >
 
     <android.support.v7.widget.RecyclerView
@@ -19,6 +21,7 @@
         tools:layoutManager="GridLayoutManager"
         tools:listitem="@layout/mp_item_image"
         tools:spanCount="3"
+        android:animateLayoutChanges="false"
         />
 
     <com.edwardstock.multipicker.internal.widgets.MpColoredProgressBar
@@ -55,6 +58,7 @@
         android:id="@+id/selection_root"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:background="@color/mp_colorBackground"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

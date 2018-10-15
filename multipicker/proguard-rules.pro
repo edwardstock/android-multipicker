@@ -22,3 +22,4 @@
 -dontobfuscate
 -keep class com.arellomobile.** {*;}
 -keep class * extends com.arellomobile.** {*;}
+-keep class com.edwardstock.multipicker.** {*;}

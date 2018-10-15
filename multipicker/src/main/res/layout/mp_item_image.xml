@@ -5,8 +5,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:animateLayoutChanges="true"
     tools:context=".picker.ui.PickerActivity"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
     >
 
     <View
@@ -26,12 +28,14 @@
         android:id="@+id/mp_image_view_root"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:animateLayoutChanges="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_percent=".8"
+        app:layout_constraintDimensionRatio="W,1:1"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent=".8"
+        app:layout_constraintHeight_percent="1"
+        app:layout_constraintWidth_percent="1"
         >
 
         <ImageView

@@ -64,6 +64,7 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
             a.recycle();
 
             act.toolbar.setTitleTextColor(textColor);
+            act.toolbar.setSubtitleTextColor(textColor);
             act.toolbar.setBackgroundColor(primColor);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 act.getWindow().setStatusBarColor(darkColor);
@@ -104,6 +105,7 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
         safeActivity(act -> {
             Timber.d("Set toolbar color");
             act.toolbar.setTitleTextColor(0x00FFFFFF);
+            act.toolbar.setSubtitleTextColor(0x00FFFFFF);
             act.toolbar.setBackgroundColor(0x00FFFFFF);
             act.getWindow().setBackgroundDrawable(new ColorDrawable(0xFF000000));
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {

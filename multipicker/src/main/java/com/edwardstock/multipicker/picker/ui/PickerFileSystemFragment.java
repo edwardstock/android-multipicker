@@ -1,9 +1,9 @@
 package com.edwardstock.multipicker.picker.ui;
 
 import android.content.Context;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 
-import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
 import com.edwardstock.multipicker.internal.PickerSavePath;
 import com.edwardstock.multipicker.internal.helpers.Acceptor;
@@ -19,7 +19,7 @@ import timber.log.Timber;
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
-public abstract class PickerFileSystemFragment extends MvpAppCompatFragment {
+public abstract class PickerFileSystemFragment extends Fragment {
     private GridSpacingItemDecoration mGridSpacingItemDecoration;
     private WeakReference<PickerActivity> mActivity;
 

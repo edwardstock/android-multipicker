@@ -1,20 +1,20 @@
 package com.edwardstock.multipicker.picker.ui;
 
 import android.Manifest;
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.arellomobile.mvp.presenter.InjectPresenter;
-import com.arellomobile.mvp.presenter.PresenterType;
 import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
@@ -36,7 +36,7 @@ import permissions.dispatcher.RuntimePermissions;
 @RuntimePermissions
 public class DirsFragment extends PickerFileSystemFragment implements DirsView {
 
-    @InjectPresenter(type = PresenterType.LOCAL) DirsPresenter presenter;
+    DirsPresenter presenter;
     @BindView(R2.id.list) RecyclerView list;
     @BindView(R2.id.mp_selection_title) TextView selectionTitle;
     @BindView(R2.id.mp_selection_action_clear) ImageView selectionClearAction;
@@ -56,9 +56,28 @@ public class DirsFragment extends PickerFileSystemFragment implements DirsView {
     }
 
     @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        presenter = new DirsPresenter();
+        presenter.attachToLifecycle(this);
+        presenter.attachView(this);
+    }
+
+    @Override
     public void setAdapter(final RecyclerView.Adapter<?> adapter) {
         boolean isTablet = getResources().getBoolean(R.bool.mp_isTablet);
         int spanCount = isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns();
+
+        if (getActivity() != null) {
+            int rot = getActivity().getWindowManager().getDefaultDisplay().getRotation();
+            if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_180) {
+                spanCount = (isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns()) + 1;
+            } else {
+                spanCount = isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns();
+            }
+        }
+
+
         GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), spanCount);
         setGridSpacingItemDecoration(list, spanCount);
         list.setLayoutManager(layoutManager);

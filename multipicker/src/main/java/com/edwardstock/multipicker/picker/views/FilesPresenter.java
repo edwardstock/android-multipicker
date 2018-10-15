@@ -6,7 +6,6 @@ import android.os.Looper;
 import android.view.View;
 
 import com.annimon.stream.Stream;
-import com.arellomobile.mvp.InjectViewState;
 import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.data.MediaFile;
@@ -25,7 +24,6 @@ import timber.log.Timber;
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
-@InjectViewState
 public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaFileLoader.OnLoadListener {
     private PickerConfig mConfig;
     private FilesAdapter mAdapter;
@@ -37,7 +35,7 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
 
     @Override
     public void updateFiles(MediaFileLoader loader) {
-        getViewState().showProgress();
+        callOnView(FilesView::showProgress);
         Timber.d("Updating files");
         loader.loadDeviceImages(mConfig, this);
     }
@@ -50,14 +48,17 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
 
     @Override
     public void onFilesLoadFailed(Throwable t) {
-        getViewState().hideProgress();
-        getViewState().onError(t);
+        callOnView(v -> {
+            v.hideProgress();
+            v.onError(t);
+        });
     }
 
     @Override
     public void onFilesLoadedSuccess(List<MediaFile> images, List<Dir> dirList) {
         new Handler(Looper.getMainLooper()).post(() -> {
-            getViewState().hideProgress();
+            callOnView(FilesView::hideProgress);
+
             List<MediaFile> dirFiles = null;
             for (Dir d : dirList) {
                 if (d.equals(mDir)) {
@@ -72,31 +73,34 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
             if (!dirFiles.isEmpty()) {
                 mAdapter.notifyDataSetChanged();
             } else {
-                getViewState().showEmpty();
+                callOnView(v -> {
+                    v.showEmpty();
+                });
             }
         });
     }
 
     @Override
-    public void attachView(FilesView view) {
-        super.attachView(view);
+    public void onViewAttach() {
+        super.onViewAttach();
         if (mSelectionCnt == 0) {
-            getViewState().setSelectionTitle("Выберите файл");
-            getViewState().setSelectionSubmitEnabled(false);
+            callOnView(v -> {
+                v.setSelectionTitle("Выберите файл");
+                v.setSelectionSubmitEnabled(false);
+            });
+
         }
         Timber.d("Set adapter");
-        getViewState().setAdapter(mAdapter);
-        getViewState().setOnSelectionClearListener(v -> {
-            getViewState().clearSelection();
+        callOnView(v -> {
+            v.setAdapter(mAdapter);
+            v.setOnSelectionClearListener(v1 -> {
+                v.clearSelection();
+            });
+            v.setOnSelectionDoneListener(v1 -> {
+                v.finishWithResult();
+            });
         });
-        getViewState().setOnSelectionDoneListener(v -> {
-            getViewState().finishWithResult();
-        });
-    }
 
-    @Override
-    public void detachView(FilesView view) {
-        super.detachView(view);
     }
 
     public void setSelection(ImmutableList<MediaFile> selection) {
@@ -106,8 +110,10 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
         mSelectionCnt = selection.size();
 
         if (selection.isEmpty()) {
-            getViewState().setSelectionTitle("Выберите файл");
-            getViewState().setSelectionSubmitEnabled(false);
+            callOnView(v -> {
+                v.setSelectionTitle("Выберите файл");
+                v.setSelectionSubmitEnabled(false);
+            });
             return;
         }
 
@@ -115,19 +121,29 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
         long numVideos = selection.size() - numPhotos;
 
         if (numPhotos == 0 && numVideos == 0) {
-            getViewState().setSelectionTitle("Выберите файл");
-            getViewState().setSelectionSubmitEnabled(false);
+            callOnView(v -> {
+                v.setSelectionTitle("Выберите файл");
+                v.setSelectionSubmitEnabled(false);
+            });
             return;
         }
 
         if (numPhotos > 0 && numVideos == 0) {
-            getViewState().setSelectionTitle(String.format(Locale.getDefault(), "Выбрано %d фото", numPhotos));
+            callOnView(v -> {
+                v.setSelectionTitle(String.format(Locale.getDefault(), "Выбрано %d фото", numPhotos));
+            });
         } else if (numPhotos == 0 && numVideos > 0) {
-            getViewState().setSelectionTitle(String.format(Locale.getDefault(), "Выбрано %d видео", numVideos));
+            callOnView(v -> {
+                v.setSelectionTitle(String.format(Locale.getDefault(), "Выбрано %d видео", numVideos));
+            });
         } else {
-            getViewState().setSelectionTitle(String.format(Locale.getDefault(), "Выбрано %d фото и %d видео", numPhotos, numVideos));
+            callOnView(v -> {
+                v.setSelectionTitle(String.format(Locale.getDefault(), "Выбрано %d фото и %d видео", numPhotos, numVideos));
+            });
         }
-        getViewState().setSelectionSubmitEnabled(true);
+        callOnView(v -> {
+            v.setSelectionSubmitEnabled(true);
+        });
     }
 
     public PickerConfig getConfig() {
@@ -139,14 +155,23 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
     }
 
     @Override
+    protected void onViewDetach() {
+        super.onViewDetach();
+    }
+
+    @Override
     protected void onFirstViewAttach() {
         super.onFirstViewAttach();
-        getViewState().setSelectionTitle("Выберите файл");
-        getViewState().setSelectionSubmitEnabled(false);
+        callOnView(v -> {
+            v.setSelectionTitle("Выберите файл");
+            v.setSelectionSubmitEnabled(false);
+        });
 
     }
 
     private void onFileClick(MediaFile file, boolean isSelected, View sharedView) {
-        getViewState().startPreview(file, sharedView);
+        callOnView(v -> {
+            v.startPreview(file, sharedView);
+        });
     }
 }

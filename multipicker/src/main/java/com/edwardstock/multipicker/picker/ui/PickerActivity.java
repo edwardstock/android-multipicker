@@ -2,7 +2,6 @@ package com.edwardstock.multipicker.picker.ui;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -19,15 +18,13 @@ import android.support.transition.TransitionSet;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.arellomobile.mvp.MvpActivity;
-import com.arellomobile.mvp.MvpAppCompatActivity;
-import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
@@ -56,9 +53,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
 @RuntimePermissions
-public class PickerActivity extends MvpAppCompatActivity implements PickerView, ErrorView {
-    @InjectPresenter PickerPresenter presenter;
+public class PickerActivity extends AppCompatActivity implements PickerView, ErrorView {
     public @BindView(R2.id.toolbar) Toolbar toolbar;
+    private PickerPresenter presenter;
     private PickerConfig mConfig;
     private PickerFileSystemFragment mFragment;
 
@@ -165,11 +162,11 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
 
     @Override
     public void onBackPressed() {
-        if(mFragment != null) {
+        if (mFragment != null) {
             mFragment.onBackPressed();
         }
 
-        if(getSupportFragmentManager().getBackStackEntryCount() <= 1) {
+        if (getSupportFragmentManager().getBackStackEntryCount() <= 1) {
             setResult(RESULT_CANCELED);
             finish();
             return;
@@ -177,17 +174,6 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
 
         super.onBackPressed();
         resolveLastFragment();
-    }
-
-    private void resolveLastFragment() {
-        int index = getSupportFragmentManager().getBackStackEntryCount() - 1;
-        if(index >= 0) {
-            FragmentManager.BackStackEntry backEntry = getSupportFragmentManager().getBackStackEntryAt(index);
-            String tag = backEntry.getName();
-            if(tag != null) {
-                mFragment = ((PickerFileSystemFragment) getSupportFragmentManager().findFragmentByTag(tag));
-            }
-        }
     }
 
     public void startFiles(Dir dir) {
@@ -212,7 +198,7 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
                     .beginTransaction()
                     .replace(R.id.mp_container, fragment, fragment.getClass().getSimpleName());
 
-            if(sharedView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (sharedView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 tx.addSharedElement(sharedView, sharedView.getTransitionName());
                 TransitionSet sharedSet = new TransitionSet();
                 sharedSet.addTransition(new ChangeImageTransform());
@@ -221,19 +207,25 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
                 sharedSet.addTransition(new ChangeTransform());
                 TransitionSet commonSet = new TransitionSet();
                 commonSet.addTransition(new AutoTransition());
+
                 fragment.setSharedElementEnterTransition(sharedSet);
                 fragment.setSharedElementReturnTransition(sharedSet);
-                mFragment.setSharedElementEnterTransition(sharedSet);
-                mFragment.setSharedElementReturnTransition(sharedSet);
+
                 fragment.setEnterTransition(commonSet);
                 fragment.setReturnTransition(commonSet);
-                mFragment.setEnterTransition(commonSet);
-                mFragment.setReturnTransition(commonSet);
             }
 
             tx.addToBackStack(null).commit();
             mFragment = fragment;
         }
+    }
+
+    public final void submitResult(List<MediaFile> files) {
+        Intent intent = new Intent();
+        intent.putParcelableArrayListExtra(PickerConst.EXTRA_RESULT_FILES, new ArrayList<>(files));
+
+        setResult(RESULT_OK, intent);
+        finish();
     }
 
     @NeedsPermission({Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE})
@@ -266,6 +258,9 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        presenter = new PickerPresenter();
+        presenter.attachToLifecycle(this);
+        presenter.attachView(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.mp_activity_picker);
         ButterKnife.bind(this);
@@ -275,7 +270,7 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
 
         mFragment = DirsFragment.newInstance(getConfig());
 
-        if(getConfig().getTitle() != null){
+        if (getConfig().getTitle() != null) {
             toolbar.setTitle(getConfig().getTitle());
         }
 
@@ -290,7 +285,7 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         // get fragment presenter
-        if(mFragment instanceof ImageViewerFragment) {
+        if (mFragment instanceof ImageViewerFragment) {
             getSupportFragmentManager().popBackStack();
         }
         resolveLastFragment();
@@ -298,16 +293,20 @@ public class PickerActivity extends MvpAppCompatActivity implements PickerView, 
         mFragment.onActivityResult(requestCode, resultCode, data);
     }
 
-    public final void submitResult(List<MediaFile> files) {
-        Intent intent = new Intent();
-        intent.putParcelableArrayListExtra(PickerConst.EXTRA_RESULT_FILES, new ArrayList<>(files));
-
-        setResult(RESULT_OK, intent);
-        finish();
+    private void resolveLastFragment() {
+        int index = getSupportFragmentManager().getBackStackEntryCount() - 1;
+        if (index >= 0) {
+            FragmentManager.BackStackEntry backEntry = getSupportFragmentManager().getBackStackEntryAt(index);
+            String tag = backEntry.getName();
+            if (tag != null) {
+                mFragment = ((PickerFileSystemFragment) getSupportFragmentManager().findFragmentByTag(tag));
+            }
+        }
     }
 
     public static final class Builder extends ActivityBuilder {
         private PickerConfig mConfig;
+
         public Builder(@NonNull Activity from, PickerConfig config) {
             super(from);
             mConfig = config;

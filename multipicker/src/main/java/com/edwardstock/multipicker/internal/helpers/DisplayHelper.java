@@ -18,7 +18,15 @@ public final class DisplayHelper {
         return (int) (pixels + 0.5f);
     }
 
-    private static DisplayMetrics getMetrics(Context context) {
+    public static int getWidth(Context context) {
+        return getMetrics(context).widthPixels;
+    }
+
+    public static int getHeight(Context context) {
+        return getMetrics(context).heightPixels;
+    }
+
+    public static DisplayMetrics getMetrics(Context context) {
         return context.getResources().getDisplayMetrics();
     }
 }

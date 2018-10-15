@@ -29,9 +29,9 @@ public class MainActivity extends AppCompatActivity {
             MultiPicker.create(this)
                     .configure()
                     .title("AAA")
-                    .showVideos(false)
+                    .showVideos(true)
                     .showPhotos(true)
-                    .limit(2)
+//                    .limit(1)
                     .build()
                     .start(REQ);
         });

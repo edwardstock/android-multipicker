@@ -1,5 +1,6 @@
 package com.edwardstock.multipicker.picker.ui;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -12,7 +13,7 @@ import android.support.transition.TransitionSet;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -21,7 +22,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
@@ -32,7 +32,6 @@ import com.edwardstock.multipicker.internal.PickerSavePath;
 import com.edwardstock.multipicker.internal.helpers.DisplayHelper;
 import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.adapters.FilesAdapter;
-import com.edwardstock.multipicker.picker.adapters.LazyValue;
 import com.edwardstock.multipicker.picker.adapters.MediaFileDetailsLookup;
 import com.edwardstock.multipicker.picker.adapters.MediaFileKeyProvider;
 import com.edwardstock.multipicker.picker.views.FilesPresenter;
@@ -44,11 +43,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-import androidx.recyclerview.selection.BandPredicate;
-import androidx.recyclerview.selection.ItemDetailsLookup;
 import androidx.recyclerview.selection.ItemKeyProvider;
-import androidx.recyclerview.selection.OnContextClickListener;
-import androidx.recyclerview.selection.OnItemActivatedListener;
 import androidx.recyclerview.selection.SelectionTracker;
 import androidx.recyclerview.selection.StorageStrategy;
 import butterknife.BindView;
@@ -61,8 +56,7 @@ import timber.log.Timber;
  */
 public class FilesFragment extends PickerFileSystemFragment implements FilesView {
 
-    @InjectPresenter FilesPresenter presenter;
-
+    FilesPresenter presenter;
     @BindView(R2.id.list) RecyclerView list;
     @BindView(R2.id.mp_selection_title) TextView selectionTitle;
     @BindView(R2.id.mp_selection_action_clear) ImageView selectionClearAction;
@@ -70,10 +64,11 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
     @BindView(R2.id.progress) ProgressBar progress;
     @BindView(R2.id.selection_root_sub) ConstraintLayout rootSub;
     private SelectionTracker<MediaFile> mSelectionTracker;
-
     private boolean mLastSelectionState = false;
     private Dir mDir;
     private PickerConfig mConfig;
+    private List<MediaFile> mSelected = new ArrayList<>(10);
+    private MediaFile mLastPreview = null;
 
     public static FilesFragment newInstance(PickerConfig config, Dir dir) {
         Bundle args = new Bundle();
@@ -85,21 +80,55 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
         return fragment;
     }
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (presenter != null) {
+            presenter.onRestoreSavedState(savedInstanceState);
+        }
+    }
 
-    private List<MediaFile> mSelected = new ArrayList<>(10);
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        presenter = new FilesPresenter();
+        presenter.attachToLifecycle(this);
+        presenter.attachView(this);
+    }
+
     @Override
     public void setAdapter(final RecyclerView.Adapter<?> adapter) {
         Timber.d("Set adapter from fragment");
         boolean isTablet = getResources().getBoolean(R.bool.mp_isTablet);
         int spanCount = isTablet ? mConfig.getFileColumnsTablet() : mConfig.getFileColumns();
+        if (getActivity() != null) {
+            int rot = getActivity().getWindowManager().getDefaultDisplay().getRotation();
+            if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_180) {
+                spanCount = (isTablet ? mConfig.getFileColumnsTablet() : mConfig.getFileColumns()) + 1;
+            } else {
+                spanCount = isTablet ? mConfig.getFileColumnsTablet() : mConfig.getFileColumns();
+            }
+        }
+
         GridLayoutManager layoutManager = new GridLayoutManager(getContext(), spanCount);
         setGridSpacingItemDecoration(list, spanCount);
+
         list.setLayoutManager(layoutManager);
         list.setAdapter(adapter);
         list.setItemAnimator(null);
+        list.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    ((FilesAdapter) adapter).setIsScrolling(false);
+                } else {
+                    ((FilesAdapter) adapter).setIsScrolling(true);
+                }
+            }
+        });
 
         FilesAdapter filesAdapter = ((FilesAdapter) adapter);
-
 
         if (mSelectionTracker != null) {
             Timber.d("Reusing tracker");
@@ -122,11 +151,7 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
                 .withSelectionPredicate(new SelectionTracker.SelectionPredicate<MediaFile>() {
                     @Override
                     public boolean canSetStateForKey(@NonNull MediaFile mediaFile, boolean nextState) {
-                        if(mSelected.size() == mConfig.getLimit() && !mSelected.contains(mediaFile)) {
-                            return false;
-                        }
-
-                        return true;
+                        return mConfig.getLimit() <= 0 || (mSelected.size() != mConfig.getLimit() || mSelected.contains(mediaFile));
                     }
 
                     @Override
@@ -136,7 +161,7 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
 
                     @Override
                     public boolean canSelectMultiple() {
-                        return mConfig.getLimit() > 1;
+                        return true;
                     }
                 })
                 .build();
@@ -215,8 +240,6 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
     public void showEmpty() {
 
     }
-
-    private MediaFile mLastPreview = null;
 
     @Override
     public void startPreview(MediaFile file, View sharedView) {
@@ -307,19 +330,14 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
         if (mSelectionTracker != null) {
             mSelectionTracker.onSaveInstanceState(outState);
         }
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (mSelectionTracker != null) {
-            mSelectionTracker.onRestoreInstanceState(savedInstanceState);
+        if (presenter != null) {
+            presenter.onSaveInstanceState(outState);
         }
     }
 
     @Override
     public void onPause() {
-        if(mConfig.getLimit() > 0) {
+        if (mConfig.getLimit() > 0) {
             safeActivity(act -> {
                 act.toolbar.setSubtitle(null);
             });
@@ -327,16 +345,10 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
         super.onPause();
     }
 
-    private void setSubtitle() {
-        safeActivity(act -> {
-            act.toolbar.setSubtitle(String.format(Locale.getDefault(), "%d / %d", mSelectionTracker.getSelection().size(), mConfig.getLimit()));
-        });
-    }
-
     @Override
     public void onResume() {
         super.onResume();
-        if(mConfig.getLimit() > 0) {
+        if (mConfig.getLimit() > 0) {
             setSubtitle();
         }
     }
@@ -352,7 +364,7 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
         presenter.handleExtras(getArguments());
         presenter.updateFiles(new MediaFileLoader(getContext()));
 
-        presenter.setOnFileMeasuredListener(mLastPreview, mf-> startPostponedEnterTransition());
+        presenter.setOnFileMeasuredListener(mLastPreview, mf -> startPostponedEnterTransition());
 
         if (mSelectionTracker != null) {
             mSelectionTracker.onRestoreInstanceState(savedInstanceState);
@@ -372,6 +384,14 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
             return new PickerSavePath(mDir.getName());
         }
         return super.getCapturedSavePath();
+    }
+
+    private void setSubtitle() {
+        if (mConfig.getLimit() > 0) {
+            safeActivity(act -> {
+                act.toolbar.setSubtitle(String.format(Locale.getDefault(), "%d / %d", mSelectionTracker.getSelection().size(), mConfig.getLimit()));
+            });
+        }
     }
 
 

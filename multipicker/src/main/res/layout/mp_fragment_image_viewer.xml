@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.github.chrisbanes.photoview.PhotoView
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/mp_photo_view"
+    android:id="@+id/fs_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"
-    tools:src="@drawable/mp_image_placeholder"
-    />
+    android:background="@color/mp_viewer_background"
+    >
+
+    <com.github.chrisbanes.photoview.PhotoView
+        android:id="@+id/mp_photo_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/mp_viewer_background"
+        tools:src="@drawable/mp_image_placeholder"
+        />
+</FrameLayout>

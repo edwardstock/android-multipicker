@@ -1,7 +1,7 @@
 package com.edwardstock.multipicker.picker.views;
 
-import com.arellomobile.mvp.MvpPresenter;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
+import com.edwardstock.multipicker.internal.mvp.MvpPresenter;
 
 /**
  * android-multipicker. 2018
