@@ -14,8 +14,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import com.edwardstock.multipicker.R;
+import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.picker.PickerConst;
@@ -24,6 +26,8 @@ import com.github.chrisbanes.photoview.PhotoView;
 
 import java.util.Collections;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import timber.log.Timber;
 
 /**
@@ -33,9 +37,12 @@ import timber.log.Timber;
 public class ImageViewerFragment extends PickerFileSystemFragment {
 
     boolean mHiddenControls = false;
+    @BindView(R2.id.mp_selection_action_add) ImageView btnAdd;
+    @BindView(R2.id.mp_selection_action_send) ImageView btnSend;
     private Dir mDir;
     private MenuItem mSendMenu;
     private MediaFile mFile;
+    private boolean mFirstAnim = true;
 
     public static ImageViewerFragment newInstance(Dir dir, MediaFile file) {
         Bundle args = new Bundle();
@@ -45,6 +52,19 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
         ImageViewerFragment fragment = new ImageViewerFragment();
         fragment.setArguments(args);
         return fragment;
+    }
+
+    private MediaFile mSelectedFile;
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
     }
 
     @Override
@@ -69,26 +89,23 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 act.getWindow().setStatusBarColor(darkColor);
             }
-            act.toolbar.setTranslationY(0);
 
-            act.toolbar.getMenu().removeItem(mSendMenu.getItemId());
+//            act.toolbar.setTranslationY(0);
 
+            Menu menu = act.toolbar.getMenu();
+            for (int i = 0; i < menu.size(); i++) {
+                MenuItem item = menu.getItem(i);
+                item.setVisible(true);
+            }
 
 
             act.getWindow().setBackgroundDrawable(new ColorDrawable(getResources().getColor(R.color.mp_colorBackground)));
-            act.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+//            act.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         });
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
+    public Dir getDir() {
+        return mDir;
     }
 
     @Nullable
@@ -98,6 +115,7 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
         postponeEnterTransition();
 
         PhotoView imageView = view.findViewById(R.id.mp_photo_view);
+        ButterKnife.bind(this, view);
         mFile = getArguments().getParcelable(PickerConst.EXTRA_MEDIA_FILE);
         mDir = getArguments().getParcelable(PickerConst.EXTRA_DIR);
 
@@ -115,13 +133,20 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
             act.getWindow().setBackgroundDrawable(new ColorDrawable(0xFF000000));
 
             Menu menu = act.toolbar.getMenu();
-            mSendMenu = menu.add(R.string.mp_done);
-            mSendMenu.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-            mSendMenu.setIcon(R.drawable.mp_ic_send_white);
-            mSendMenu.setOnMenuItemClickListener(item -> {
+            for (int i = 0; i < menu.size(); i++) {
+                MenuItem item = menu.getItem(i);
+                item.setVisible(false);
+            }
+
+            btnSend.setOnClickListener(v -> {
                 safeActivity(act1 -> act1.submitResult(Collections.singletonList(mFile)));
-                return true;
             });
+
+//            btnAdd.setOnClickListener(v -> {
+//                mSelectedFile = mFile;
+//                safeActivity(ac->ac.onBackPressed());
+//            });
+
         });
 
         imageView.setImageURI(Uri.parse(mFile.getPath()));
@@ -129,24 +154,13 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             imageView.setTransitionName(getString(R.string.mp_transition_image) + String.valueOf(mFile.getId()));
         }
-
-        imageView.setOnClickListener(v -> {
-            if (!mHiddenControls) {
-                hideSystemUI();
-            } else {
-                showSystemUI();
-            }
-            mHiddenControls = !mHiddenControls;
-        });
-
-        showSystemUI();
         startPostponedEnterTransition();
 
         return view;
     }
 
-    public Dir getDir() {
-        return mDir;
+    public MediaFile getAddedFile() {
+        return mSelectedFile;
     }
 
     @Override
@@ -154,46 +168,4 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
         return null;
     }
 
-    private int getStatusBarHeight() {
-        int result = 0;
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            result = getResources().getDimensionPixelSize(resourceId);
-        }
-        return result;
-    }
-
-    private void showSystemUI() {
-        safeActivity(act -> {
-            act.toolbar.animate()
-                    .translationY(getStatusBarHeight())
-                    .setDuration(150)
-                    .start();
-            act.getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-        });
-
-    }
-
-    private void hideSystemUI() {
-        safeActivity(act -> {
-            act.toolbar.animate()
-                    .translationY(0)
-                    .setDuration(150)
-                    .start();
-            int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN; // hide status bar
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                flags |= View.SYSTEM_UI_FLAG_IMMERSIVE;
-            }
-
-            act.getWindow().getDecorView().setSystemUiVisibility(flags);
-        });
-    }
 }

@@ -4,7 +4,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.support.v4.content.FileProvider;
 
@@ -27,6 +29,7 @@ import static com.google.common.base.MoreObjects.firstNonNull;
 @RestrictTo({RestrictTo.Scope.LIBRARY})
 public final class CameraHandler {
 
+    private final static String CURRENT_CAPTURE_PATH = "camera_handler_media_path";
     private String mCurrentMediaPath;
 
     static List<MediaFile> singleListFromPath(String path) {
@@ -104,8 +107,7 @@ public final class CameraHandler {
         }
 
         if (mCurrentMediaPath == null) {
-            Timber.w("mCurrentMediaPath null. " +
-                    "This happen if you haven't call #getCameraPhotoIntent() or the activity is being recreated");
+            Timber.w("mCurrentMediaPath null. This happen if you haven't call #getCameraPhotoIntent() or the activity is being recreated");
             imageReadyListener.onImageReady(null);
             return;
         }
@@ -140,6 +142,21 @@ public final class CameraHandler {
     public String getCurrentMediaPath() {
         return mCurrentMediaPath.replace("file:", "");
     }
+
+    public void onSaveInstanceState(Bundle outState) {
+        if (mCurrentMediaPath != null) {
+            Timber.d("Save current capturing path: %s", mCurrentMediaPath);
+            outState.putString(CURRENT_CAPTURE_PATH, mCurrentMediaPath);
+        }
+    }
+
+    public void onRestoreInstanceState(@Nullable Bundle savedState) {
+        if (savedState != null && savedState.containsKey(CURRENT_CAPTURE_PATH)) {
+            mCurrentMediaPath = savedState.getString(CURRENT_CAPTURE_PATH);
+            Timber.d("Restore current capturing path: %s", mCurrentMediaPath);
+        }
+    }
+
 
     private String getProviderName(Context context) {
         return String.format(Locale.getDefault(), "%s%s", context.getPackageName(), ".multipicker.provider");

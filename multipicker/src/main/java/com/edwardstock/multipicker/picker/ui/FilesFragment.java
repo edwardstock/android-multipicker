@@ -2,6 +2,7 @@ package com.edwardstock.multipicker.picker.ui;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
@@ -56,6 +57,7 @@ import timber.log.Timber;
  */
 public class FilesFragment extends PickerFileSystemFragment implements FilesView {
 
+    private final static String LIST_STATE = "LIST_STATE";
     FilesPresenter presenter;
     @BindView(R2.id.list) RecyclerView list;
     @BindView(R2.id.mp_selection_title) TextView selectionTitle;
@@ -69,6 +71,7 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
     private PickerConfig mConfig;
     private List<MediaFile> mSelected = new ArrayList<>(10);
     private MediaFile mLastPreview = null;
+    private Parcelable mListState;
 
     public static FilesFragment newInstance(PickerConfig config, Dir dir) {
         Bundle args = new Bundle();
@@ -83,6 +86,7 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+//        setRetainInstance(true);
         if (presenter != null) {
             presenter.onRestoreSavedState(savedInstanceState);
         }
@@ -95,6 +99,7 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
         presenter.attachToLifecycle(this);
         presenter.attachView(this);
     }
+
 
     @Override
     public void setAdapter(final RecyclerView.Adapter<?> adapter) {
@@ -112,11 +117,13 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
 
         GridLayoutManager layoutManager = new GridLayoutManager(getContext(), spanCount);
         setGridSpacingItemDecoration(list, spanCount);
-
         list.setLayoutManager(layoutManager);
         list.setAdapter(adapter);
         list.setItemAnimator(null);
+        layoutManager.onRestoreInstanceState(mListState);
         list.addOnScrollListener(new RecyclerView.OnScrollListener() {
+
+
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
@@ -310,6 +317,21 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
     }
 
     @Override
+    public void scrollTo(int position) {
+//        if(list != null) {
+//            list.post(()->{
+//                list.smoothScrollToPosition(position);
+//            });
+//        }
+    }
+
+    public void addSelection(MediaFile selection) {
+        if (selection != null && mSelectionTracker != null) {
+            mSelectionTracker.select(selection);
+        }
+    }
+
+    @Override
     public void onError(CharSequence error) {
         safeActivity(act -> act.onError(error));
     }
@@ -325,14 +347,30 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
+    public void onStop() {
+        super.onStop();
+        if (list != null && list.getLayoutManager() != null) {
+            mListState = list.getLayoutManager().onSaveInstanceState();
+        }
+
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+
         if (mSelectionTracker != null) {
             mSelectionTracker.onSaveInstanceState(outState);
         }
         if (presenter != null) {
             presenter.onSaveInstanceState(outState);
         }
+
+        if (list.getLayoutManager() != null) {
+            mListState = list.getLayoutManager().onSaveInstanceState();
+            outState.putParcelable(LIST_STATE, mListState);
+        }
+
+        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -348,6 +386,7 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
     @Override
     public void onResume() {
         super.onResume();
+        list.getLayoutManager().onRestoreInstanceState(mListState);
         if (mConfig.getLimit() > 0) {
             setSubtitle();
         }
@@ -369,6 +408,7 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
         if (mSelectionTracker != null) {
             mSelectionTracker.onRestoreInstanceState(savedInstanceState);
         }
+
 
         return view;
     }

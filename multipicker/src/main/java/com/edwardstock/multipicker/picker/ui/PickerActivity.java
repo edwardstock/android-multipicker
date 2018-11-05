@@ -7,13 +7,13 @@ import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.transition.AutoTransition;
 import android.support.transition.ChangeBounds;
 import android.support.transition.ChangeClipBounds;
 import android.support.transition.ChangeImageTransform;
-import android.support.transition.ChangeTransform;
+import android.support.transition.Fade;
 import android.support.transition.TransitionSet;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -37,6 +37,7 @@ import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.views.PickerPresenter;
 import com.edwardstock.multipicker.picker.views.PickerView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -166,6 +167,12 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
             mFragment.onBackPressed();
         }
 
+        MediaFile addedFile = null;
+
+        if (mFragment instanceof ImageViewerFragment) {
+            addedFile = ((ImageViewerFragment) mFragment).getAddedFile();
+        }
+
         if (getSupportFragmentManager().getBackStackEntryCount() <= 1) {
             setResult(RESULT_CANCELED);
             finish();
@@ -174,6 +181,10 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
 
         super.onBackPressed();
         resolveLastFragment();
+
+        if (mFragment instanceof FilesFragment) {
+            ((FilesFragment) mFragment).addSelection(addedFile);
+        }
     }
 
     public void startFiles(Dir dir) {
@@ -204,9 +215,9 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
                 sharedSet.addTransition(new ChangeImageTransform());
                 sharedSet.addTransition(new ChangeBounds());
                 sharedSet.addTransition(new ChangeClipBounds());
-                sharedSet.addTransition(new ChangeTransform());
+//                sharedSet.addTransition(new ChangeTransform());
                 TransitionSet commonSet = new TransitionSet();
-                commonSet.addTransition(new AutoTransition());
+                commonSet.addTransition(new Fade());
 
                 fragment.setSharedElementEnterTransition(sharedSet);
                 fragment.setSharedElementReturnTransition(sharedSet);
@@ -262,6 +273,13 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
         presenter.attachToLifecycle(this);
         presenter.attachView(this);
         super.onCreate(savedInstanceState);
+
+
+        checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath());
+        checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
+
+        presenter.onRestoreSavedState(savedInstanceState);
+
         setContentView(R.layout.mp_activity_picker);
         ButterKnife.bind(this);
         setResult(RESULT_CANCELED);
@@ -291,6 +309,40 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
         resolveLastFragment();
         presenter.handleExtras(requestCode, resultCode, data);
         mFragment.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (presenter != null) {
+            presenter.onSaveInstanceState(outState);
+        }
+    }
+
+    private void checkFiles(String pathName) {
+        File folderFile = new File(pathName);
+        File[] files = folderFile.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                // checking the File is file or directory
+                if (file.isFile()) {
+                    String extension = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".") + 1);
+                    String mime = null;
+                    if (extension.equalsIgnoreCase("mp4")) {
+                        mime = "video/mp4";
+                    } else if (extension.equalsIgnoreCase("jpg")) {
+                        mime = "image/jpeg";
+                    }
+                    if (mime != null) {
+                        Timber.d("Scan file: %s", file.getAbsolutePath());
+                        MediaScannerConnection.scanFile(getApplicationContext(), new String[]{file.getParent()}, new String[]{mime}, null);
+                    }
+
+                } else if (file.isDirectory()) {
+                    checkFiles(file.getAbsolutePath());
+                }
+            }
+        }
     }
 
     private void resolveLastFragment() {

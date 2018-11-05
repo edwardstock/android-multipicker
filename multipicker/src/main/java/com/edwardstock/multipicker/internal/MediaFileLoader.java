@@ -96,10 +96,14 @@ public class MediaFileLoader {
     }
 
     private Bitmap createVideoThumbnail(String filePath) {
-        MediaMetadataRetriever mMMR = new MediaMetadataRetriever();
-        mMMR.setDataSource(filePath);
+        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+        mmr.setDataSource(filePath);
         //api time unit is microseconds
-        return mMMR.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+        try {
+            return mmr.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+        } finally {
+            mmr.release();
+        }
     }
 
     public interface OnLoadListener {

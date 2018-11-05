@@ -29,6 +29,7 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
     private FilesAdapter mAdapter;
     private Dir mDir;
     private int mSelectionCnt = 0;
+    private final static String FILE_SCROLL_POSITION = "files_scroll_position";
 
     public FilesPresenter() {
     }
@@ -80,6 +81,24 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
         });
     }
 
+    private int mScrollPosition = 0;
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (outState != null) {
+            outState.putInt(FILE_SCROLL_POSITION, mScrollPosition);
+        }
+    }
+
+    @Override
+    public void onRestoreSavedState(Bundle savedState) {
+        super.onRestoreSavedState(savedState);
+        if (savedState != null && savedState.containsKey(FILE_SCROLL_POSITION)) {
+            mScrollPosition = savedState.getInt(FILE_SCROLL_POSITION);
+        }
+    }
+
     @Override
     public void onViewAttach() {
         super.onViewAttach();
@@ -93,12 +112,15 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
         Timber.d("Set adapter");
         callOnView(v -> {
             v.setAdapter(mAdapter);
+            v.scrollTo(mScrollPosition);
             v.setOnSelectionClearListener(v1 -> {
                 v.clearSelection();
             });
             v.setOnSelectionDoneListener(v1 -> {
                 v.finishWithResult();
             });
+
+            Timber.d("Restore scroll: %d", mScrollPosition);
         });
 
     }
@@ -152,6 +174,10 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
 
     public void setOnFileMeasuredListener(MediaFile file, FilesAdapter.OnMeasuredListener listener) {
         mAdapter.setOnFileMeasuredListener(file, listener);
+    }
+
+    public void setScroll(int position) {
+        mScrollPosition = position;
     }
 
     @Override

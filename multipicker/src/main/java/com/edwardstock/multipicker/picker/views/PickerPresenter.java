@@ -2,6 +2,7 @@ package com.edwardstock.multipicker.picker.views;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.CallSuper;
@@ -34,6 +35,18 @@ public class PickerPresenter extends MvpPresenter<PickerView> {
 
     public void handleCaptureVideo() {
         callOnView(v -> v.captureVideoWithPermissions(mCameraHandler, REQUEST_CAPTURE_VIDEO));
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        mCameraHandler.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onRestoreSavedState(Bundle savedState) {
+        super.onRestoreSavedState(savedState);
+        mCameraHandler.onRestoreInstanceState(savedState);
     }
 
     @CallSuper

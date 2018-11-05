@@ -25,4 +25,5 @@ public interface FilesView extends ErrorView, FileSystemView {
     void showProgress();
     void hideProgress();
     void setSelectionSubmitEnabled(boolean enabled);
+    void scrollTo(int position);
 }

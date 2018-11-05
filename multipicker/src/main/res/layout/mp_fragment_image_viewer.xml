@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/mp_viewer_background"
+    tools:context=".picker.ui.PickerActivity"
     >
 
     <com.github.chrisbanes.photoview.PhotoView
@@ -14,5 +15,15 @@
         android:layout_height="match_parent"
         android:background="@color/mp_viewer_background"
         tools:src="@drawable/mp_image_placeholder"
+        />
+
+    <include
+        android:id="@+id/layout_actions"
+        layout="@layout/mp_inc_item_send_or_add"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom"
+        android:fitsSystemWindows="true"
+        android:visibility="visible"
         />
 </FrameLayout>
