@@ -43,7 +43,6 @@ import androidx.recyclerview.selection.Selection;
 import androidx.recyclerview.selection.SelectionTracker;
 import butterknife.BindView;
 import butterknife.ButterKnife;
-import timber.log.Timber;
 
 public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> {
 
@@ -171,7 +170,7 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
             }
         });
 
-        Timber.d("Update item: %d, selection enable: %b", viewHolder.getAdapterPosition(), isEnableSelection);
+//        Timber.d("Update item: %d, selection enable: %b", viewHolder.getAdapterPosition(), isEnableSelection);
         if (mList != null && mList.get() != null) {
             mList.get().post(() -> {
                 TransitionSet allover = new TransitionSet();

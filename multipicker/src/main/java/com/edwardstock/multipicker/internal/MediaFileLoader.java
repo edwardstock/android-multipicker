@@ -19,6 +19,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,8 +78,33 @@ public class MediaFileLoader {
         }
     }
 
-    public void loadDeviceImages(PickerConfig config, final OnLoadListener listener) {
+    public void loadDeviceImages(final PickerConfig config, final OnLoadListener listener) {
         getExecutorService().execute(new ImageLoadRunnable(config, listener));
+    }
+
+    public void loadDeviceImages(final PickerConfig config, final Dir dir, final OnLoadListener listener) {
+        getExecutorService().execute(new ImageLoadRunnable(config, new OnLoadListener() {
+            @Override
+            public void onFilesLoadFailed(Throwable t) {
+                listener.onFilesLoadFailed(t);
+            }
+
+            @Override
+            public void onFilesLoadedSuccess(List<MediaFile> images, List<Dir> dirList) {
+                List<MediaFile> dirFiles = null;
+                for (Dir d : dirList) {
+                    if (d.equals(dir)) {
+                        dirFiles = d.getFiles();
+                        break;
+                    }
+                }
+                if (dirFiles == null) {
+                    dirFiles = new ArrayList<>(0);
+                }
+
+                listener.onFilesLoadedSuccess(dirFiles, Collections.singletonList(dir));
+            }
+        }));
     }
 
     public void abortLoadImages() {

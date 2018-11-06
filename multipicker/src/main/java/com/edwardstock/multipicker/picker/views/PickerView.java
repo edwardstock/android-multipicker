@@ -6,12 +6,13 @@ import android.media.MediaScannerConnection;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.CameraHandler;
 import com.edwardstock.multipicker.internal.mvp.MvpView;
+import com.edwardstock.multipicker.internal.views.ErrorView;
 
 /**
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
-public interface PickerView extends MvpView {
+public interface PickerView extends MvpView, ErrorView, FileSystemView {
     void capturePhotoWithPermissions(CameraHandler cameraHandler, int requestCode);
     void captureVideoWithPermissions(CameraHandler cameraHandler, int requestCode);
     void finishCapturePhoto(CameraHandler cameraHandler, Intent intent);

@@ -17,7 +17,7 @@ import java.util.List;
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
-public class DirsPresenter extends BaseFsPresenter<DirsView> implements MediaFileLoader.OnLoadListener {
+public class DirsPresenter extends PickerPresenter<DirsView> implements MediaFileLoader.OnLoadListener {
     private PickerConfig mConfig;
     private DirsAdapter mAdapter;
 

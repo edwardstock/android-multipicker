@@ -6,10 +6,17 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
 
-    <application>
+    <application
+        >
         <activity
-            android:name=".picker.ui.PickerActivity"
+            android:name=".picker.ui.DirsActivity"
             android:theme="@style/mp_AppTheme"/>
+        <activity
+            android:name=".picker.ui.FilesActivity"
+            android:theme="@style/mp_AppTheme"/>
+        <activity
+            android:name=".picker.ui.PreviewerActivity"
+            android:theme="@style/mp_Dark"/>
 
         <provider
             android:name=".internal.MultiPickerFileProvider"

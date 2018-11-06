@@ -25,7 +25,7 @@ import timber.log.Timber;
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
-public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaFileLoader.OnLoadListener {
+public class FilesPresenter extends PickerPresenter<FilesView> implements MediaFileLoader.OnLoadListener {
     private PickerConfig mConfig;
     private FilesAdapter mAdapter;
     private Dir mDir;
@@ -68,7 +68,7 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
                     break;
                 }
             }
-            if (dirFiles == null || dirFiles.isEmpty()) {
+            if (dirFiles == null) {
                 dirFiles = new ArrayList<>(0);
             }
             final List<File> toDelete = Stream.of(dirFiles)

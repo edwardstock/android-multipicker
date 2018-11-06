@@ -1,5 +1,8 @@
 package com.edwardstock.multipicker.data;
 
+import android.annotation.TargetApi;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
@@ -8,6 +11,8 @@ import android.support.v4.util.ObjectsCompat;
 import com.edwardstock.multipicker.internal.PickerUtils;
 
 import java.io.File;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.Locale;
 
 /**
@@ -30,6 +35,7 @@ public class MediaFile implements Parcelable {
     private long mId;
     private String mName;
     private String mPath;
+    private File mFile;
     private VideoInfo mVideoInfo;
     private MediaSize mMediaSize;
 
@@ -41,6 +47,7 @@ public class MediaFile implements Parcelable {
         mId = id;
         mName = name;
         mPath = path;
+        mFile = new File(mPath);
     }
 
     public MediaFile(long id, String name, String path, MediaSize size) {
@@ -61,6 +68,7 @@ public class MediaFile implements Parcelable {
         mId = in.readLong();
         mName = in.readString();
         mPath = in.readString();
+        mFile = new File(in.readString());
         mVideoInfo = in.readParcelable(VideoInfo.class.getClassLoader());
     }
 
@@ -105,6 +113,31 @@ public class MediaFile implements Parcelable {
         return mPath;
     }
 
+    @TargetApi(Build.VERSION_CODES.O)
+    public Path getPathFS() {
+        return FileSystems.getDefault().getPath(getPath());
+    }
+
+    public File getFile() {
+        return mFile;
+    }
+
+    public Uri getUri() {
+        return Uri.fromFile(getFile());
+    }
+
+    public boolean exists() {
+        return getFile().exists();
+    }
+
+    public long length() {
+        return getFile().length();
+    }
+
+    public boolean delete() {
+        return getFile().delete();
+    }
+
     public String getName() {
         return mName;
     }
@@ -123,6 +156,7 @@ public class MediaFile implements Parcelable {
         dest.writeLong(mId);
         dest.writeString(mName);
         dest.writeString(mPath);
+        dest.writeString(mFile.getAbsolutePath());
         dest.writeParcelable(mVideoInfo, 0);
     }
 

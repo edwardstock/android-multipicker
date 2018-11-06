@@ -9,7 +9,6 @@ import android.support.annotation.CallSuper;
 
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.CameraHandler;
-import com.edwardstock.multipicker.internal.mvp.MvpPresenter;
 
 import timber.log.Timber;
 
@@ -20,7 +19,7 @@ import static android.app.Activity.RESULT_OK;
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
-public class PickerPresenter extends MvpPresenter<PickerView> {
+public abstract class PickerPresenter<V extends PickerView> extends BaseFsPresenter<V> {
     private final static int REQUEST_CAPTURE_PHOTO = 1010;
     private final static int REQUEST_CAPTURE_VIDEO = 1011;
     private CameraHandler mCameraHandler;
@@ -67,11 +66,11 @@ public class PickerPresenter extends MvpPresenter<PickerView> {
         }
     }
 
-    void abortCapture() {
+    protected void abortCapture() {
         mCameraHandler.removeCaptured();
     }
 
-    private void onScanned(String path, Uri uri) {
+    protected void onScanned(String path, Uri uri) {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             Timber.d("OnScanned: %s", path);
             callOnView(PickerView::startUpdateFiles);

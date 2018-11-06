@@ -1,16 +1,14 @@
 package com.edwardstock.multipicker.picker.ui;
 
 import android.Manifest;
-import android.content.Context;
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -19,8 +17,8 @@ import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.Dir;
+import com.edwardstock.multipicker.internal.ActivityBuilder;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
-import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.views.DirsPresenter;
 import com.edwardstock.multipicker.picker.views.DirsView;
 
@@ -29,12 +27,14 @@ import butterknife.ButterKnife;
 import permissions.dispatcher.NeedsPermission;
 import permissions.dispatcher.RuntimePermissions;
 
+import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_CONFIG;
+
 /**
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
 @RuntimePermissions
-public class DirsFragment extends PickerFileSystemFragment implements DirsView {
+public class DirsActivity extends PickerActivity implements DirsView {
 
     DirsPresenter presenter;
     @BindView(R2.id.list) RecyclerView list;
@@ -46,39 +46,20 @@ public class DirsFragment extends PickerFileSystemFragment implements DirsView {
     @BindView(R2.id.progress) ProgressBar progress;
     private PickerConfig mConfig;
 
-    public static DirsFragment newInstance(PickerConfig config) {
-        Bundle args = new Bundle();
-        args.putParcelable(PickerConst.EXTRA_CONFIG, config);
-
-        DirsFragment fragment = new DirsFragment();
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        presenter = new DirsPresenter();
-        presenter.attachToLifecycle(this);
-        presenter.attachView(this);
-    }
-
     @Override
     public void setAdapter(final RecyclerView.Adapter<?> adapter) {
         boolean isTablet = getResources().getBoolean(R.bool.mp_isTablet);
         int spanCount = isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns();
 
-        if (getActivity() != null) {
-            int rot = getActivity().getWindowManager().getDefaultDisplay().getRotation();
-            if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_180) {
-                spanCount = (isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns()) + 1;
-            } else {
-                spanCount = isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns();
-            }
+        int rot = getWindowManager().getDefaultDisplay().getRotation();
+        if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_180) {
+            spanCount = (isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns()) + 1;
+        } else {
+            spanCount = isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns();
         }
 
 
-        GridLayoutManager layoutManager = new GridLayoutManager(getActivity(), spanCount);
+        GridLayoutManager layoutManager = new GridLayoutManager(this, spanCount);
         setGridSpacingItemDecoration(list, spanCount);
         list.setLayoutManager(layoutManager);
         list.setHasFixedSize(true);
@@ -87,7 +68,8 @@ public class DirsFragment extends PickerFileSystemFragment implements DirsView {
 
     @Override
     public void startFiles(Dir dir) {
-        safeActivity(act -> act.startFiles(dir));
+        new FilesActivity.Builder(this, getConfig(), dir)
+                .start();
     }
 
     @Override
@@ -108,37 +90,17 @@ public class DirsFragment extends PickerFileSystemFragment implements DirsView {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        DirsFragmentPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
-    }
-
-    @Override
-    public void onError(CharSequence error) {
-        safeActivity(act -> act.onError(error));
-    }
-
-    @Override
-    public void onError(Throwable t) {
-        safeActivity(act -> act.onError(t));
+        DirsActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
     }
 
     @Override
     public void startUpdateFiles() {
-        presenter.updateFiles(new MediaFileLoader(getActivity()));
+        presenter.updateFiles(new MediaFileLoader(this));
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.mp_fragment_filesystem, container, false);
-        ButterKnife.bind(this, view);
-        selectionRoot.setVisibility(View.GONE);
-        mConfig = getArguments().getParcelable(PickerConst.EXTRA_CONFIG);
-
-        presenter.handleExtras(getArguments());
-
-        DirsFragmentPermissionsDispatcher.setLoaderWithPermissionCheck(this);
-
-        return view;
+    @NeedsPermission({Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE})
+    void setLoader() {
+        presenter.updateFiles(new MediaFileLoader(this));
     }
 
     @Override
@@ -146,9 +108,43 @@ public class DirsFragment extends PickerFileSystemFragment implements DirsView {
         return presenter;
     }
 
-    @NeedsPermission({Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE})
-    void setLoader() {
-        presenter.updateFiles(new MediaFileLoader(getActivity()));
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        presenter = new DirsPresenter();
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.mp_activity_filesystem);
+        ButterKnife.bind(this);
+        setupToolbar(toolbar);
+        if (getConfig().getTitle() != null) {
+            toolbar.setTitle(getConfig().getTitle());
+        }
+        presenter.attachView(this);
+        selectionRoot.setVisibility(View.GONE);
+        mConfig = getIntent().getParcelableExtra(EXTRA_CONFIG);
+
+        presenter.handleExtras(getIntent().getExtras());
+
+        DirsActivityPermissionsDispatcher.setLoaderWithPermissionCheck(this);
+    }
+
+    public static final class Builder extends ActivityBuilder {
+        private PickerConfig mConfig;
+
+        public Builder(@NonNull Activity from, PickerConfig config) {
+            super(from);
+            mConfig = config;
+        }
+
+        @Override
+        protected void onBeforeStart(Intent intent) {
+            super.onBeforeStart(intent);
+            intent.putExtra(EXTRA_CONFIG, mConfig);
+        }
+
+        @Override
+        protected Class<?> getActivityClass() {
+            return DirsActivity.class;
+        }
     }
 
 

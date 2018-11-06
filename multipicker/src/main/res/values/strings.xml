@@ -9,4 +9,5 @@
     <string name="mp_done">Готово</string>
     <string name="mp_chooser_title">Выберите фото</string>
     <string name="no_content">Файлы отсутствуют</string>
+    <string name="mp_empty"/>
 </resources>

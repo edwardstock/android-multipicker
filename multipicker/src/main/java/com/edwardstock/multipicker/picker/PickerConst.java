@@ -5,7 +5,6 @@ package com.edwardstock.multipicker.picker;
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
 public final class PickerConst {
-
     public final static String EXTRA_CONFIG = "MP_EXTRA_CONFIG";
     public final static String EXTRA_DIR = "MP_EXTRA_DIR";
     public final static String EXTRA_RESULT_FILES = "MP_EXTRA_RESULT_FILES";

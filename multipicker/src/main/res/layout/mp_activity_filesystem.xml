@@ -6,9 +6,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/fs_root"
-    tools:context=".picker.ui.PickerActivity"
+    tools:context=".picker.ui.FilesActivity"
     android:background="@color/mp_colorBackground"
     >
+
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:elevation="10dp"
+        android:minHeight="?attr/actionBarSize"
+        android:theme="@style/mp_toolbar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:maxButtonHeight="?android:attr/actionBarSize"
+        app:navigationIcon="@drawable/mp_ic_arrow_back"
+        app:title="@string/mp_chooser_title"
+        app:titleTextColor="?android:attr/textColorSecondary"
+        />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/list"
@@ -17,7 +34,7 @@
         app:layout_constraintBottom_toTopOf="@id/selection_root"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
         tools:layoutManager="GridLayoutManager"
         tools:listitem="@layout/mp_item_image"
         tools:spanCount="3"

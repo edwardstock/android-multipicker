@@ -6,7 +6,7 @@ import android.support.v4.app.Fragment;
 
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.picker.PickerConst;
-import com.edwardstock.multipicker.picker.ui.PickerActivity;
+import com.edwardstock.multipicker.picker.ui.DirsActivity;
 
 import java.lang.ref.WeakReference;
 import java.util.Collections;
@@ -87,17 +87,17 @@ public final class MultiPicker {
         return new PickerConfig(this);
     }
 
-    public interface ResultCallback {
-        void onResult(List<MediaFile> files);
-    }
-
     public void start(int requestCode) {
-        new PickerActivity.Builder(mActivity.get(), mConfig)
+        new DirsActivity.Builder(mActivity.get(), mConfig)
                 .start(requestCode);
     }
 
     MultiPicker withConfig(PickerConfig pickerConfig) {
         mConfig = pickerConfig;
         return this;
+    }
+
+    public interface ResultCallback {
+        void onResult(List<MediaFile> files);
     }
 }

@@ -2,6 +2,7 @@ package com.edwardstock.multipicker.data;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
 import android.support.v4.util.ObjectsCompat;
 
 import java.util.ArrayList;
@@ -26,6 +27,12 @@ public final class Dir implements Parcelable {
     };
     private String mName;
     private List<MediaFile> mFiles;
+
+    @NonNull
+    @Override
+    public String toString() {
+        return mName;
+    }
 
     public Dir(String name) {
         mName = name;

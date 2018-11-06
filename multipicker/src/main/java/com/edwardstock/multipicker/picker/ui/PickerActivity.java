@@ -1,28 +1,18 @@
 package com.edwardstock.multipicker.picker.ui;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.transition.ChangeBounds;
-import android.support.transition.ChangeClipBounds;
-import android.support.transition.ChangeImageTransform;
-import android.support.transition.Fade;
-import android.support.transition.TransitionSet;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Toast;
 
 import com.edwardstock.multipicker.PickerConfig;
@@ -30,9 +20,12 @@ import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.data.MediaFile;
-import com.edwardstock.multipicker.internal.ActivityBuilder;
 import com.edwardstock.multipicker.internal.CameraHandler;
+import com.edwardstock.multipicker.internal.MediaFileLoader;
+import com.edwardstock.multipicker.internal.PickerSavePath;
+import com.edwardstock.multipicker.internal.helpers.DisplayHelper;
 import com.edwardstock.multipicker.internal.views.ErrorView;
+import com.edwardstock.multipicker.internal.widgets.GridSpacingItemDecoration;
 import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.views.PickerPresenter;
 import com.edwardstock.multipicker.picker.views.PickerView;
@@ -42,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
-import butterknife.ButterKnife;
 import permissions.dispatcher.NeedsPermission;
 import permissions.dispatcher.RuntimePermissions;
 import timber.log.Timber;
@@ -54,11 +46,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
 @RuntimePermissions
-public class PickerActivity extends AppCompatActivity implements PickerView, ErrorView {
+abstract class PickerActivity extends AppCompatActivity implements PickerView, ErrorView {
+    private final static String STATE_SCANNED_FILES_FIRST_TIME = "STATE_SCANNED_FILES_FIRST_TIME";
     public @BindView(R2.id.toolbar) Toolbar toolbar;
-    private PickerPresenter presenter;
     private PickerConfig mConfig;
-    private PickerFileSystemFragment mFragment;
+    private GridSpacingItemDecoration mGridSpacingItemDecoration;
+    private boolean mScannedDirs = false;
 
     @Override
     public void capturePhotoWithPermissions(CameraHandler cameraHandler, int requestCode) {
@@ -72,12 +65,12 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
 
     @Override
     public void finishCapturePhoto(CameraHandler cameraHandler, Intent intent) {
-        mFragment.updateFiles();
+//        mFragment.updateFiles();
     }
 
     @Override
     public void finishCaptureVideo(CameraHandler cameraHandler, Intent intent) {
-        mFragment.updateFiles();
+//        mFragment.updateFiles();
     }
 
     @Override
@@ -88,6 +81,11 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
     }
 
     @Override
+    public void startUpdateFiles() {
+        getPresenter().updateFiles(new MediaFileLoader(this));
+    }
+
+    @Override
     public void onError(CharSequence error) {
         Toast.makeText(this, error, Toast.LENGTH_LONG).show();
     }
@@ -95,12 +93,6 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
     @Override
     public void onError(Throwable t) {
         Toast.makeText(this, t.getMessage(), Toast.LENGTH_LONG).show();
-    }
-
-    @Override
-    public void startUpdateFiles() {
-        Timber.d("Update files: Fragment: %s", mFragment.toString());
-        mFragment.updateFiles();
     }
 
     public void setupToolbar(@NonNull final Toolbar toolbar) {
@@ -127,10 +119,10 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
         }
 
         if (item.getItemId() == R.id.menu_camera) {
-            presenter.handleCapturePhoto();
+            getPresenter().handleCapturePhoto();
             return true;
         } else if (item.getItemId() == R.id.menu_video) {
-            presenter.handleCaptureVideo();
+            getPresenter().handleCaptureVideo();
             return true;
         }
 
@@ -161,73 +153,14 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
         PickerActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
     }
 
-    @Override
-    public void onBackPressed() {
-        if (mFragment != null) {
-            mFragment.onBackPressed();
-        }
-
-        MediaFile addedFile = null;
-
-        if (mFragment instanceof ImageViewerFragment) {
-            addedFile = ((ImageViewerFragment) mFragment).getAddedFile();
-        }
-
-        if (getSupportFragmentManager().getBackStackEntryCount() <= 1) {
-            setResult(RESULT_CANCELED);
-            finish();
-            return;
-        }
-
-        super.onBackPressed();
-        resolveLastFragment();
-
-        if (mFragment instanceof FilesFragment) {
-            ((FilesFragment) mFragment).addSelection(addedFile);
-        }
-    }
-
     public void startFiles(Dir dir) {
-        FilesFragment fragment = FilesFragment.newInstance(getConfig(), dir);
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.mp_container, fragment, fragment.getClass().getSimpleName())
-                .addToBackStack(null)
-                .commit();
-        mFragment = fragment;
+        new FilesActivity.Builder(this, getConfig(), dir)
+                .start();
     }
 
-    public void startPreview(Dir dir, MediaFile file, View sharedView) {
-        if (file.isVideo()) {
-            final Uri uri = Uri.parse(file.getPath());
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-            intent.setDataAndType(uri, "video/*");
-            startActivity(intent);
-        } else {
-            ImageViewerFragment fragment = ImageViewerFragment.newInstance(dir, file);
-            FragmentTransaction tx = getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.mp_container, fragment, fragment.getClass().getSimpleName());
-
-            if (sharedView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                tx.addSharedElement(sharedView, sharedView.getTransitionName());
-                TransitionSet sharedSet = new TransitionSet();
-                sharedSet.addTransition(new ChangeImageTransform());
-                sharedSet.addTransition(new ChangeBounds());
-                sharedSet.addTransition(new ChangeClipBounds());
-//                sharedSet.addTransition(new ChangeTransform());
-                TransitionSet commonSet = new TransitionSet();
-                commonSet.addTransition(new Fade());
-
-                fragment.setSharedElementEnterTransition(sharedSet);
-                fragment.setSharedElementReturnTransition(sharedSet);
-
-                fragment.setEnterTransition(commonSet);
-                fragment.setReturnTransition(commonSet);
-            }
-
-            tx.addToBackStack(null).commit();
-            mFragment = fragment;
+    public void updateFiles() {
+        if (getPresenter() != null) {
+            getPresenter().updateFiles(new MediaFileLoader(this));
         }
     }
 
@@ -240,8 +173,8 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
     }
 
     @NeedsPermission({Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE})
-    void capturePhoto(CameraHandler cameraHandler, int requestCode) {
-        Intent intent = cameraHandler.getCameraPhotoIntent(this, getConfig(), mFragment.getCapturedSavePath());
+    public void capturePhoto(CameraHandler cameraHandler, int requestCode) {
+        Intent intent = cameraHandler.getCameraPhotoIntent(this, getConfig(), getCapturedSavePath());
         if (intent == null) {
             Toast.makeText(this, R.string.mp_error_create_image_file, Toast.LENGTH_LONG).show();
             return;
@@ -254,8 +187,8 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
     }
 
     @NeedsPermission({Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE})
-    void captureVideo(CameraHandler cameraHandler, int requestCode) {
-        Intent intent = cameraHandler.getCameraVideoIntent(this, getConfig(), mFragment.getCapturedSavePath());
+    public void captureVideo(CameraHandler cameraHandler, int requestCode) {
+        Intent intent = cameraHandler.getCameraVideoIntent(this, getConfig(), getCapturedSavePath());
         if (intent == null) {
             Toast.makeText(this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show();
             return;
@@ -267,56 +200,72 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
         }
     }
 
+    protected void setGridSpacingItemDecoration(RecyclerView list, int spanCount) {
+        Timber.d("Set grid spacing");
+        if (mGridSpacingItemDecoration != null) {
+            list.removeItemDecoration(mGridSpacingItemDecoration);
+        }
+        mGridSpacingItemDecoration = new GridSpacingItemDecoration(spanCount, DisplayHelper.dpToPx(this, 1), false);
+        list.addItemDecoration(mGridSpacingItemDecoration);
+    }
+
+    protected PickerSavePath getCapturedSavePath() {
+        return null;
+    }
+
+    abstract protected PickerPresenter getPresenter();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        presenter = new PickerPresenter();
-        presenter.attachToLifecycle(this);
-        presenter.attachView(this);
         super.onCreate(savedInstanceState);
-
-
-        checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath());
-        checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
-
-        presenter.onRestoreSavedState(savedInstanceState);
-
-        setContentView(R.layout.mp_activity_picker);
-        ButterKnife.bind(this);
-        setResult(RESULT_CANCELED);
-
-        setupToolbar(toolbar);
-
-        mFragment = DirsFragment.newInstance(getConfig());
-
-        if (getConfig().getTitle() != null) {
-            toolbar.setTitle(getConfig().getTitle());
+        if (getPresenter() != null) {
+            getPresenter().attachToLifecycle(this);
+            getPresenter().onRestoreSavedState(savedInstanceState);
         }
 
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.mp_container, mFragment, mFragment.getClass().getSimpleName())
-                .addToBackStack(null)
-                .commit();
+        if (savedInstanceState != null && savedInstanceState.containsKey(STATE_SCANNED_FILES_FIRST_TIME)) {
+            mScannedDirs = savedInstanceState.getBoolean(STATE_SCANNED_FILES_FIRST_TIME);
+        }
+
+        if (!mScannedDirs) {
+            new Thread(() -> {
+                Timber.d("Scan files...");
+                checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath());
+                checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
+                checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
+            }).start();
+        }
+
+
+        setResult(RESULT_CANCELED);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         // get fragment presenter
-        if (mFragment instanceof ImageViewerFragment) {
-            getSupportFragmentManager().popBackStack();
+        getPresenter().handleExtras(requestCode, resultCode, data);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (getPresenter() != null) {
+            getPresenter().onRestoreSavedState(savedInstanceState);
         }
-        resolveLastFragment();
-        presenter.handleExtras(requestCode, resultCode, data);
-        mFragment.onActivityResult(requestCode, resultCode, data);
+
+        if (savedInstanceState != null && savedInstanceState.containsKey(STATE_SCANNED_FILES_FIRST_TIME)) {
+            mScannedDirs = savedInstanceState.getBoolean(STATE_SCANNED_FILES_FIRST_TIME);
+        }
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if (presenter != null) {
-            presenter.onSaveInstanceState(outState);
+        if (getPresenter() != null) {
+            getPresenter().onSaveInstanceState(outState);
         }
+        outState.putBoolean(STATE_SCANNED_FILES_FIRST_TIME, mScannedDirs);
     }
 
     private void checkFiles(String pathName) {
@@ -324,6 +273,11 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
         File[] files = folderFile.listFiles();
         if (files != null) {
             for (File file : files) {
+                // skip hidden files or directories
+                if (file.getName().startsWith(".")) {
+                    continue;
+                }
+
                 // checking the File is file or directory
                 if (file.isFile()) {
                     String extension = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".") + 1);
@@ -334,50 +288,19 @@ public class PickerActivity extends AppCompatActivity implements PickerView, Err
                         mime = "image/jpeg";
                     }
                     if (mime != null) {
-                        Timber.d("Scan file: %s", file.getAbsolutePath());
-                        MediaScannerConnection.scanFile(getApplicationContext(), new String[]{file.getParent()}, new String[]{mime}, null);
+//                        Timber.d("Scan file: %s", file.getAbsolutePath());
+                        MediaScannerConnection.scanFile(getApplicationContext(), new String[]{file.getAbsolutePath()}, new String[]{mime}, new MediaScannerConnection.OnScanCompletedListener() {
+                            @Override
+                            public void onScanCompleted(String path, Uri uri) {
+//                                Timber.d("Scan file: %s (%s) - completed", path, uri.toString());
+                            }
+                        });
                     }
 
                 } else if (file.isDirectory()) {
                     checkFiles(file.getAbsolutePath());
                 }
             }
-        }
-    }
-
-    private void resolveLastFragment() {
-        int index = getSupportFragmentManager().getBackStackEntryCount() - 1;
-        if (index >= 0) {
-            FragmentManager.BackStackEntry backEntry = getSupportFragmentManager().getBackStackEntryAt(index);
-            String tag = backEntry.getName();
-            if (tag != null) {
-                mFragment = ((PickerFileSystemFragment) getSupportFragmentManager().findFragmentByTag(tag));
-            }
-        }
-    }
-
-    public static final class Builder extends ActivityBuilder {
-        private PickerConfig mConfig;
-
-        public Builder(@NonNull Activity from, PickerConfig config) {
-            super(from);
-            mConfig = config;
-        }
-
-        public Builder(@NonNull Fragment from, PickerConfig config) {
-            super(from);
-            mConfig = config;
-        }
-
-        @Override
-        protected void onBeforeStart(Intent intent) {
-            super.onBeforeStart(intent);
-            intent.putExtra(PickerConst.EXTRA_CONFIG, mConfig);
-        }
-
-        @Override
-        protected Class<?> getActivityClass() {
-            return PickerActivity.class;
         }
     }
 

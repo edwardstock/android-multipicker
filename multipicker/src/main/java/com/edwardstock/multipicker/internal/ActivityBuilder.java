@@ -63,7 +63,7 @@ public abstract class ActivityBuilder {
     }
 
     public ActivityBuilder addSharedView(String name, View view) {
-        if (mActivity == null || mFragment == null) {
+        if (mActivity == null && mFragment == null) {
             Timber.w("Attaching shared views make sense only from activity or fragment context");
             return this;
         }
