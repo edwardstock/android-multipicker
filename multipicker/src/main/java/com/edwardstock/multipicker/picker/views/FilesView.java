@@ -6,6 +6,8 @@ import android.view.View;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.views.ErrorView;
 
+import java.io.File;
+
 import androidx.recyclerview.selection.SelectionTracker;
 
 /**
@@ -26,4 +28,5 @@ public interface FilesView extends ErrorView, FileSystemView {
     void hideProgress();
     void setSelectionSubmitEnabled(boolean enabled);
     void scrollTo(int position);
+    void removeFileFromMediaDB(File file);
 }

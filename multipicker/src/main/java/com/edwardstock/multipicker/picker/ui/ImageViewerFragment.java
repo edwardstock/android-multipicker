@@ -2,7 +2,7 @@ package com.edwardstock.multipicker.picker.ui;
 
 import android.content.res.TypedArray;
 import android.graphics.drawable.ColorDrawable;
-import android.net.Uri;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.ColorInt;
@@ -15,14 +15,26 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.DecodeFormat;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.data.MediaFile;
+import com.edwardstock.multipicker.internal.helpers.DisplayHelper;
+import com.edwardstock.multipicker.internal.helpers.ExceptionHelper;
 import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.views.BaseFsPresenter;
 import com.github.chrisbanes.photoview.PhotoView;
+import com.jsibbold.zoomage.ZoomageView;
 
 import java.util.Collections;
 
@@ -39,10 +51,12 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
     boolean mHiddenControls = false;
     @BindView(R2.id.mp_selection_action_add) ImageView btnAdd;
     @BindView(R2.id.mp_selection_action_send) ImageView btnSend;
+    @BindView(R2.id.mp_photo_progress) ProgressBar progress;
     private Dir mDir;
     private MenuItem mSendMenu;
     private MediaFile mFile;
     private boolean mFirstAnim = true;
+    private MediaFile mSelectedFile;
 
     public static ImageViewerFragment newInstance(Dir dir, MediaFile file) {
         Bundle args = new Bundle();
@@ -53,8 +67,6 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
         fragment.setArguments(args);
         return fragment;
     }
-
-    private MediaFile mSelectedFile;
 
     @Override
     public void onDestroyView() {
@@ -90,8 +102,6 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
                 act.getWindow().setStatusBarColor(darkColor);
             }
 
-//            act.toolbar.setTranslationY(0);
-
             Menu menu = act.toolbar.getMenu();
             for (int i = 0; i < menu.size(); i++) {
                 MenuItem item = menu.getItem(i);
@@ -100,7 +110,6 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
 
 
             act.getWindow().setBackgroundDrawable(new ColorDrawable(getResources().getColor(R.color.mp_colorBackground)));
-//            act.getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         });
     }
 
@@ -114,8 +123,10 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
         View view = inflater.inflate(R.layout.mp_fragment_image_viewer, container, false);
         postponeEnterTransition();
 
-        PhotoView imageView = view.findViewById(R.id.mp_photo_view);
+
+        ZoomageView imageView = view.findViewById(R.id.mp_photo_view);
         ButterKnife.bind(this, view);
+        progress.setVisibility(View.VISIBLE);
         mFile = getArguments().getParcelable(PickerConst.EXTRA_MEDIA_FILE);
         mDir = getArguments().getParcelable(PickerConst.EXTRA_DIR);
 
@@ -141,15 +152,39 @@ public class ImageViewerFragment extends PickerFileSystemFragment {
             btnSend.setOnClickListener(v -> {
                 safeActivity(act1 -> act1.submitResult(Collections.singletonList(mFile)));
             });
-
-//            btnAdd.setOnClickListener(v -> {
-//                mSelectedFile = mFile;
-//                safeActivity(ac->ac.onBackPressed());
-//            });
-
         });
 
-        imageView.setImageURI(Uri.parse(mFile.getPath()));
+        final int width = DisplayHelper.getWidth(getContext());
+        final int height = DisplayHelper.getHeight(getContext());
+
+        ExceptionHelper.doubleTryOOM(()->{
+            Glide.with(this)
+                    .load(mFile.getPath())
+                    .apply(new RequestOptions()
+                            .override(width, height)
+                            .centerInside()
+                            .encodeQuality(80)
+                    )
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            Timber.e(e);
+                            progress.setVisibility(View.GONE);
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            progress.setVisibility(View.GONE);
+                            return false;
+                        }
+                    })
+                    .into(imageView);
+        }, t->{
+            imageView.setImageResource(R.drawable.mp_bg_black_error);
+            progress.setVisibility(View.GONE);
+        }, "mp_preview_load");
+
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             imageView.setTransitionName(getString(R.string.mp_transition_image) + String.valueOf(mFile.getId()));

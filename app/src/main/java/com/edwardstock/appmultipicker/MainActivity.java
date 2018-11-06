@@ -43,11 +43,9 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQ) {
             List<MediaFile> files = MultiPicker.handleActivityResult(resultCode, data);
             Timber.d("OnResult: %d", resultCode);
-            files.forEach(item -> {
+            for(MediaFile item: files) {
                 Timber.d("Selected file: %s", item);
-            });
-
-
+            }
         }
     }
 }

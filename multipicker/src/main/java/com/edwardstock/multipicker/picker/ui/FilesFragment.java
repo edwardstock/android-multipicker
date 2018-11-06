@@ -1,6 +1,7 @@
 package com.edwardstock.multipicker.picker.ui;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
@@ -39,6 +40,7 @@ import com.edwardstock.multipicker.picker.views.FilesPresenter;
 import com.edwardstock.multipicker.picker.views.FilesView;
 import com.google.common.collect.ImmutableList;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -323,6 +325,17 @@ public class FilesFragment extends PickerFileSystemFragment implements FilesView
 //                list.smoothScrollToPosition(position);
 //            });
 //        }
+    }
+
+    @Override
+    public void removeFileFromMediaDB(File file) {
+        safeActivity(act -> {
+            Timber.d("Remove file: %s as it doesn't exists", file.getAbsoluteFile());
+            try {
+                act.getContentResolver().delete(Uri.fromFile(file), null, null);
+                file.delete();
+            } catch (Throwable ignore) {}
+        });
     }
 
     public void addSelection(MediaFile selection) {

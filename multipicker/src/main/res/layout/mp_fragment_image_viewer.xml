@@ -9,12 +9,20 @@
     tools:context=".picker.ui.PickerActivity"
     >
 
-    <com.github.chrisbanes.photoview.PhotoView
+    <com.jsibbold.zoomage.ZoomageView
         android:id="@+id/mp_photo_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/mp_viewer_background"
         tools:src="@drawable/mp_image_placeholder"
+        />
+
+    <ProgressBar
+        android:id="@+id/mp_photo_progress"
+        android:layout_width="55dp"
+        android:layout_height="55dp"
+        android:layout_gravity="center"
+        android:visibility="gone"
         />
 
     <include

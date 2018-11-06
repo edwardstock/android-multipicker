@@ -14,6 +14,7 @@ import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.adapters.FilesAdapter;
 import com.google.common.collect.ImmutableList;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -70,7 +71,20 @@ public class FilesPresenter extends BaseFsPresenter<FilesView> implements MediaF
             if (dirFiles == null || dirFiles.isEmpty()) {
                 dirFiles = new ArrayList<>(0);
             }
-            mAdapter.setData(dirFiles);
+            final List<File> toDelete = Stream.of(dirFiles)
+                    .map(item -> new File(item.getPath()))
+                    .filter(item -> !item.exists() || item.length() == 0)
+                    .toList();
+
+            new Thread(()->{
+                for(final File item: toDelete) {
+                    callOnView(v->{
+                        v.removeFileFromMediaDB(item);
+                    });
+                }
+            }).start();
+
+            mAdapter.setData(Stream.of(dirFiles).filter(item -> new File(item.getPath()).exists() && new File(item.getPath()).length() > 0).toList());
             if (!dirFiles.isEmpty()) {
                 mAdapter.notifyDataSetChanged();
             } else {
