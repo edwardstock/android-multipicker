@@ -69,6 +69,7 @@ public class FilesActivity extends PickerActivity implements FilesView {
     @BindView(R2.id.mp_selection_title) TextView selectionTitle;
     @BindView(R2.id.mp_selection_action_clear) ImageView selectionClearAction;
     @BindView(R2.id.mp_selection_action_done) ImageView selectionDoneAction;
+    @BindView(R2.id.mp_selection_action_all) ImageView selectionAllAction;
     @BindView(R2.id.progress) ProgressBar progress;
     @BindView(R2.id.selection_root_sub) ConstraintLayout rootSub;
     private SelectionTracker<MediaFile> mSelectionTracker;
@@ -246,6 +247,11 @@ public class FilesActivity extends PickerActivity implements FilesView {
     }
 
     @Override
+    public void setOnSelectionAllListener(View.OnClickListener listener) {
+        selectionAllAction.setOnClickListener(listener);
+    }
+
+    @Override
     public void setSelectionObserver(SelectionTracker.SelectionObserver<MediaFile> observer) {
         mSelectionTracker.addObserver(observer);
     }
@@ -302,14 +308,13 @@ public class FilesActivity extends PickerActivity implements FilesView {
             set.clone(rootSub);
             set.setAlpha(R.id.mp_selection_action_clear, enabling ? 1f : 0f);
             set.setAlpha(R.id.mp_selection_action_done, enabling ? 1f : 0f);
+            set.setAlpha(R.id.mp_selection_action_all, enabling ? 1f : 0f);
             set.setMargin(R.id.mp_selection_title, ConstraintSet.START, enabling ? DisplayHelper.dpToPx(this, 48) : DisplayHelper.dpToPx(this, 16));
             TransitionSet transitionSet = new TransitionSet();
             Transition shortTransition = new AutoTransition();
             shortTransition.setInterpolator(new DecelerateInterpolator());
-//                shortTransition.setDuration(300);
             Transition longTransition = new AutoTransition();
             longTransition.setInterpolator(new AccelerateDecelerateInterpolator());
-//                longTransition.setDuration(600);
             transitionSet.addTransition(shortTransition);
             transitionSet.addTransition(longTransition);
             transitionSet.setOrdering(TransitionSet.ORDERING_TOGETHER);
@@ -317,11 +322,13 @@ public class FilesActivity extends PickerActivity implements FilesView {
             if (enabling) {
                 longTransition.addTarget(R.id.mp_selection_action_clear);
                 longTransition.addTarget(R.id.mp_selection_action_done);
+                longTransition.addTarget(R.id.mp_selection_action_all);
                 shortTransition.addTarget(R.id.mp_selection_title);
             } else {
                 longTransition.addTarget(R.id.mp_selection_title);
                 shortTransition.addTarget(R.id.mp_selection_action_clear);
                 shortTransition.addTarget(R.id.mp_selection_action_done);
+                shortTransition.addTarget(R.id.mp_selection_action_all);
             }
 
             TransitionManager.beginDelayedTransition(rootSub, transitionSet);
@@ -369,6 +376,17 @@ public class FilesActivity extends PickerActivity implements FilesView {
     @Override
     public void hideRefreshProgress() {
         swipeRefreshLayout.setRefreshing(false);
+    }
+
+    @Override
+    public void selectAll() {
+        if (mSelectionTracker != null && list != null && list.getAdapter() != null) {
+            if (mSelectionTracker.getSelection().size() != list.getAdapter().getItemCount()) {
+                mSelectionTracker.setItemsSelected(((FilesAdapter) list.getAdapter()).getItems(), true);
+            } else {
+                mSelectionTracker.setItemsSelected(((FilesAdapter) list.getAdapter()).getItems(), false);
+            }
+        }
     }
 
     public void addSelection(MediaFile selection) {

@@ -19,6 +19,7 @@ public interface FilesView extends PickerView {
     void setSelectionTitle(CharSequence title);
     void setOnSelectionClearListener(View.OnClickListener listener);
     void setOnSelectionDoneListener(View.OnClickListener listener);
+    void setOnSelectionAllListener(View.OnClickListener listener);
     void setSelectionObserver(SelectionTracker.SelectionObserver<MediaFile> observer);
     void showEmpty();
     void startPreview(MediaFile file, View sharedView);
@@ -33,5 +34,5 @@ public interface FilesView extends PickerView {
     void setOnRefreshListener(SwipeRefreshLayout.OnRefreshListener listener);
     void showRefreshProgress();
     void hideRefreshProgress();
-
+    void selectAll();
 }

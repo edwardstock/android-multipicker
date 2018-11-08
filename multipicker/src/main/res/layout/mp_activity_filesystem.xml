@@ -130,13 +130,28 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/mp_selection_action_done"
+                app:layout_constraintEnd_toStartOf="@id/mp_selection_action_all"
                 app:layout_constraintHorizontal_bias="0"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias=".5"
                 tools:layout_marginStart="48dp"
                 tools:text="2 photos and 2 videos and 3 files and et cetera"
+                />
+
+            <ImageView
+                android:id="@+id/mp_selection_action_all"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginEnd="@dimen/mp_spacing_double"
+                android:alpha="0"
+                android:src="@drawable/mp_ic_select_all_white"
+                android:tint="@color/mp_grey"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/mp_selection_action_done"
+                app:layout_constraintStart_toEndOf="@id/mp_selection_title"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:alpha="1"
                 />
 
             <ImageView
@@ -150,7 +165,7 @@
                 android:tint="@color/mp_colorAccent"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@id/mp_selection_title"
+                app:layout_constraintStart_toEndOf="@id/mp_selection_action_all"
                 app:layout_constraintTop_toTopOf="parent"
                 tools:alpha="1"
                 />

@@ -126,6 +126,10 @@ public class FilesPresenter extends PickerPresenter<FilesView> implements MediaF
             v.setOnSelectionDoneListener(v1 -> {
                 v.finishWithResult();
             });
+            v.setOnSelectionAllListener(v1 -> {
+                v.selectAll();
+            });
+
 
             Timber.d("Restore scroll: %d", mScrollPosition);
         });
