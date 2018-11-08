@@ -56,7 +56,7 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
     public final static int RESULT_ADD_FILE_TO_SELECTION = Activity.RESULT_FIRST_USER + 1;
     private final static String STATE_SCANNED_FILES_FIRST_TIME = "STATE_SCANNED_FILES_FIRST_TIME";
     public @BindView(R2.id.toolbar) Toolbar toolbar;
-    public @BindView(R2.id.container_swipe_refresh) SwipeRefreshLayout swipeRefreshLayout;
+    public @Nullable @BindView(R2.id.container_swipe_refresh) SwipeRefreshLayout swipeRefreshLayout;
     private PickerConfig mConfig;
     private GridSpacingItemDecoration mGridSpacingItemDecoration;
     private boolean mScannedDirs = false;
@@ -271,7 +271,6 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
             finish();
             return;
         }
-        // get fragment presenter
         getPresenter().handleExtras(requestCode, resultCode, data);
     }
 
@@ -317,7 +316,7 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
                     }
 
                     if (mime != null) {
-                        Timber.d("Scan file: %s", file.getAbsolutePath());
+//                        Timber.d("Scan file: %s", file.getAbsolutePath());
                         MediaScannerConnection.scanFile(getApplicationContext(), new String[]{file.getAbsolutePath()}, new String[]{mime}, new MediaScannerConnection.OnScanCompletedListener() {
                             @Override
                             public void onScanCompleted(String path, Uri uri) {
