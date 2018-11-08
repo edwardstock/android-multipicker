@@ -3,11 +3,11 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/fs_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/fs_root"
-    tools:context=".picker.ui.FilesActivity"
     android:background="@color/mp_colorBackground"
+    tools:context=".picker.ui.FilesActivity"
     >
 
     <android.support.v7.widget.Toolbar
@@ -27,29 +27,36 @@
         app:titleTextColor="?android:attr/textColorSecondary"
         />
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/list"
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/container_swipe_refresh"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/selection_root"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
-        tools:layoutManager="GridLayoutManager"
-        tools:listitem="@layout/mp_item_image"
-        tools:spanCount="3"
-        android:animateLayoutChanges="false"
-        />
+        >
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:animateLayoutChanges="false"
+            tools:layoutManager="GridLayoutManager"
+            tools:listitem="@layout/mp_item_image"
+            tools:spanCount="3"
+            />
+    </android.support.v4.widget.SwipeRefreshLayout>
 
     <com.edwardstock.multipicker.internal.widgets.MpColoredProgressBar
         android:id="@+id/progress"
         android:layout_width="55dp"
         android:layout_height="55dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/list"
-        app:layout_constraintEnd_toEndOf="@id/list"
-        app:layout_constraintStart_toStartOf="@id/list"
-        app:layout_constraintTop_toTopOf="@id/list"
+        app:layout_constraintBottom_toBottomOf="@id/container_swipe_refresh"
+        app:layout_constraintEnd_toEndOf="@id/container_swipe_refresh"
+        app:layout_constraintStart_toStartOf="@id/container_swipe_refresh"
+        app:layout_constraintTop_toTopOf="@id/container_swipe_refresh"
         app:mp_color="@color/mp_white_grey"
         tools:visibility="visible"
         />

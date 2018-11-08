@@ -16,7 +16,6 @@ import com.edwardstock.multipicker.picker.adapters.FilesAdapter;
 import com.google.common.collect.ImmutableList;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -27,11 +26,12 @@ import timber.log.Timber;
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
 public class FilesPresenter extends PickerPresenter<FilesView> implements MediaFileLoader.OnLoadListener {
+    private final static String FILE_SCROLL_POSITION = "files_scroll_position";
     private PickerConfig mConfig;
     private FilesAdapter mAdapter;
     private Dir mDir;
     private int mSelectionCnt = 0;
-    private final static String FILE_SCROLL_POSITION = "files_scroll_position";
+    private int mScrollPosition = 0;
 
     public FilesPresenter() {
     }
@@ -40,7 +40,7 @@ public class FilesPresenter extends PickerPresenter<FilesView> implements MediaF
     public void updateFiles(MediaFileLoader loader) {
         callOnView(FilesView::showProgress);
         Timber.d("Updating files");
-        loader.loadDeviceImages(mConfig, this);
+        loader.loadDeviceImages(mConfig, mDir, this);
     }
 
     public void handleExtras(Bundle bundle) {
@@ -61,42 +61,29 @@ public class FilesPresenter extends PickerPresenter<FilesView> implements MediaF
     public void onFilesLoadedSuccess(List<MediaFile> images, List<Dir> dirList) {
         new Handler(Looper.getMainLooper()).post(() -> {
             callOnView(FilesView::hideProgress);
+            callOnView(FilesView::hideRefreshProgress);
 
-            List<MediaFile> dirFiles = null;
-            for (Dir d : dirList) {
-                if (d.equals(mDir)) {
-                    dirFiles = d.getFiles();
-                    break;
-                }
-            }
-            if (dirFiles == null) {
-                dirFiles = new ArrayList<>(0);
-            }
-            final List<File> toDelete = Stream.of(dirFiles)
-                    .map(item -> new File(item.getPath()))
+            final List<File> toDelete = Stream.of(images)
+                    .map(MediaFile::getFile)
                     .filter(item -> !item.exists() || item.length() == 0)
                     .toList();
 
-            new Thread(()->{
-                for(final File item: toDelete) {
-                    callOnView(v->{
+            new Thread(() -> {
+                for (final File item : toDelete) {
+                    callOnView(v -> {
                         v.removeFileFromMediaDB(item);
                     });
                 }
             }).start();
 
-            mAdapter.setData(Stream.of(dirFiles).filter(item -> new File(item.getPath()).exists() && new File(item.getPath()).length() > 0).toList());
-            if (!dirFiles.isEmpty()) {
+            mAdapter.setData(Stream.of(images).filter(item -> item.exists() && item.length() > 0).toList());
+            if (!images.isEmpty()) {
                 mAdapter.notifyDataSetChanged();
             } else {
-                callOnView(v -> {
-                    v.showEmpty();
-                });
+                callOnView(FilesView::showEmpty);
             }
         });
     }
-
-    private int mScrollPosition = 0;
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
@@ -122,10 +109,15 @@ public class FilesPresenter extends PickerPresenter<FilesView> implements MediaF
                 v.setSelectionTitle("Выберите файл");
                 v.setSelectionSubmitEnabled(false);
             });
-
         }
         Timber.d("Set adapter");
         callOnView(v -> {
+            v.setOnRefreshListener(() -> {
+                v.rescanFiles(() -> {
+                    v.startUpdateFiles();
+                    v.showRefreshProgress();
+                });
+            });
             v.setAdapter(mAdapter);
             v.scrollTo(mScrollPosition);
             v.setOnSelectionClearListener(v1 -> {
@@ -196,7 +188,7 @@ public class FilesPresenter extends PickerPresenter<FilesView> implements MediaF
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        callOnView(v->{
+        callOnView(v -> {
             v.selectFile(data.getParcelableExtra(PickerConst.EXTRA_MEDIA_FILE));
         });
     }

@@ -1,6 +1,6 @@
 package com.edwardstock.multipicker.picker.views;
 
-import android.os.Parcelable;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
@@ -30,5 +30,8 @@ public interface FilesView extends PickerView {
     void scrollTo(int position);
     void removeFileFromMediaDB(File file);
     void selectFile(MediaFile mediaFile);
+    void setOnRefreshListener(SwipeRefreshLayout.OnRefreshListener listener);
+    void showRefreshProgress();
+    void hideRefreshProgress();
 
 }

@@ -41,6 +41,7 @@ public class DirsPresenter extends PickerPresenter<DirsView> implements MediaFil
         callOnView(v -> {
             v.hideProgress();
             v.onError(t);
+            v.hideRefreshProgress();
         });
     }
 
@@ -48,6 +49,7 @@ public class DirsPresenter extends PickerPresenter<DirsView> implements MediaFil
     public void onFilesLoadedSuccess(List<MediaFile> images, List<Dir> dirList) {
         new Handler(Looper.getMainLooper()).post(() -> {
             callOnView(v -> {
+                v.hideRefreshProgress();
                 v.hideProgress();
                 v.showEmpty(dirList.isEmpty());
             });
@@ -64,7 +66,15 @@ public class DirsPresenter extends PickerPresenter<DirsView> implements MediaFil
     @Override
     protected void onViewAttach() {
         super.onViewAttach();
-        callOnView(v -> v.setAdapter(mAdapter));
+        callOnView(v -> {
+            v.setAdapter(mAdapter);
+            v.setOnRefreshListener(() -> {
+                v.rescanFiles(() -> {
+                    v.startUpdateFiles();
+                    v.showRefreshProgress();
+                });
+            });
+        });
     }
 
     @Override

@@ -13,6 +13,7 @@ import android.support.transition.AutoTransition;
 import android.support.transition.Transition;
 import android.support.transition.TransitionManager;
 import android.support.transition.TransitionSet;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Surface;
@@ -352,6 +353,22 @@ public class FilesActivity extends PickerActivity implements FilesView {
         if(mSelectionTracker != null && mediaFile != null) {
             mSelectionTracker.select(mediaFile);
         }
+    }
+
+    @Override
+    public void setOnRefreshListener(SwipeRefreshLayout.OnRefreshListener listener) {
+        swipeRefreshLayout.setOnRefreshListener(listener);
+    }
+
+    @Override
+    public void showRefreshProgress() {
+        hideProgress();
+        swipeRefreshLayout.setRefreshing(true);
+    }
+
+    @Override
+    public void hideRefreshProgress() {
+        swipeRefreshLayout.setRefreshing(false);
     }
 
     public void addSelection(MediaFile selection) {

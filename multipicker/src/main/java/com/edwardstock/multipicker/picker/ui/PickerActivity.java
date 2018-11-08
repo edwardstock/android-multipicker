@@ -5,10 +5,14 @@ import android.app.Activity;
 import android.content.Intent;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -24,6 +28,7 @@ import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.CameraHandler;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
 import com.edwardstock.multipicker.internal.PickerSavePath;
+import com.edwardstock.multipicker.internal.PickerUtils;
 import com.edwardstock.multipicker.internal.helpers.DisplayHelper;
 import com.edwardstock.multipicker.internal.views.ErrorView;
 import com.edwardstock.multipicker.internal.widgets.GridSpacingItemDecoration;
@@ -47,13 +52,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
 @RuntimePermissions
-abstract class PickerActivity extends AppCompatActivity implements PickerView, ErrorView {
+public abstract class PickerActivity extends AppCompatActivity implements PickerView, ErrorView {
+    public final static int RESULT_ADD_FILE_TO_SELECTION = Activity.RESULT_FIRST_USER + 1;
     private final static String STATE_SCANNED_FILES_FIRST_TIME = "STATE_SCANNED_FILES_FIRST_TIME";
     public @BindView(R2.id.toolbar) Toolbar toolbar;
+    public @BindView(R2.id.container_swipe_refresh) SwipeRefreshLayout swipeRefreshLayout;
     private PickerConfig mConfig;
     private GridSpacingItemDecoration mGridSpacingItemDecoration;
     private boolean mScannedDirs = false;
-    public final static int RESULT_ADD_FILE_TO_SELECTION = Activity.RESULT_FIRST_USER+1;
 
     @Override
     public void capturePhotoWithPermissions(CameraHandler cameraHandler, int requestCode) {
@@ -85,6 +91,27 @@ abstract class PickerActivity extends AppCompatActivity implements PickerView, E
     @Override
     public void startUpdateFiles() {
         getPresenter().updateFiles(new MediaFileLoader(this));
+    }
+
+    @Override
+    public void rescanFiles() {
+        rescanFiles(null);
+    }
+
+    @Override
+    public void rescanFiles(OnCompleteScan listener) {
+        new Thread(() -> {
+            Timber.d("Scan files...");
+            scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath());
+            scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
+            scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath());
+            }
+            if (listener != null) {
+                new Handler(Looper.getMainLooper()).post(listener::onComplete);
+            }
+        }).start();
     }
 
     @Override
@@ -230,12 +257,7 @@ abstract class PickerActivity extends AppCompatActivity implements PickerView, E
         }
 
         if (!mScannedDirs) {
-            new Thread(() -> {
-                Timber.d("Scan files...");
-                checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath());
-                checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
-                checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
-            }).start();
+            rescanFiles();
         }
 
         setResult(RESULT_CANCELED);
@@ -244,7 +266,7 @@ abstract class PickerActivity extends AppCompatActivity implements PickerView, E
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == getConfig().getRequestCode() && resultCode == RESULT_OK) {
+        if (requestCode == getConfig().getRequestCode() && resultCode == RESULT_OK) {
             setResult(resultCode, data);
             finish();
             return;
@@ -274,7 +296,7 @@ abstract class PickerActivity extends AppCompatActivity implements PickerView, E
         outState.putBoolean(STATE_SCANNED_FILES_FIRST_TIME, mScannedDirs);
     }
 
-    private void checkFiles(String pathName) {
+    private void scanFilesIn(String pathName) {
         File folderFile = new File(pathName);
         File[] files = folderFile.listFiles();
         if (files != null) {
@@ -286,15 +308,16 @@ abstract class PickerActivity extends AppCompatActivity implements PickerView, E
 
                 // checking the File is file or directory
                 if (file.isFile()) {
-                    String extension = file.getAbsolutePath().substring(file.getAbsolutePath().lastIndexOf(".") + 1);
                     String mime = null;
-                    if (extension.equalsIgnoreCase("mp4")) {
-                        mime = "video/mp4";
-                    } else if (extension.equalsIgnoreCase("jpg")) {
-                        mime = "image/jpeg";
+                    final String p = file.getAbsolutePath();
+                    if (PickerUtils.isVideoFormat(p)) {
+                        mime = PickerUtils.mimeFrom(p);
+                    } else if (PickerUtils.isImageFormat(p)) {
+                        mime = PickerUtils.mimeFrom(p);
                     }
+
                     if (mime != null) {
-//                        Timber.d("Scan file: %s", file.getAbsolutePath());
+                        Timber.d("Scan file: %s", file.getAbsolutePath());
                         MediaScannerConnection.scanFile(getApplicationContext(), new String[]{file.getAbsolutePath()}, new String[]{mime}, new MediaScannerConnection.OnScanCompletedListener() {
                             @Override
                             public void onScanCompleted(String path, Uri uri) {
@@ -304,10 +327,14 @@ abstract class PickerActivity extends AppCompatActivity implements PickerView, E
                     }
 
                 } else if (file.isDirectory()) {
-                    checkFiles(file.getAbsolutePath());
+                    scanFilesIn(file.getAbsolutePath());
                 }
             }
         }
+    }
+
+    public interface OnCompleteScan {
+        void onComplete();
     }
 
 }

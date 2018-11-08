@@ -7,6 +7,7 @@ import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.CameraHandler;
 import com.edwardstock.multipicker.internal.mvp.MvpView;
 import com.edwardstock.multipicker.internal.views.ErrorView;
+import com.edwardstock.multipicker.picker.ui.PickerActivity;
 
 /**
  * android-multipicker. 2018
@@ -19,4 +20,6 @@ public interface PickerView extends MvpView, ErrorView, FileSystemView {
     void finishCaptureVideo(CameraHandler cameraHandler, Intent intent);
     void scanMedia(MediaFile path, MediaScannerConnection.OnScanCompletedListener listener);
     void startUpdateFiles();
+    void rescanFiles(PickerActivity.OnCompleteScan listener);
+    void rescanFiles();
 }

@@ -6,7 +6,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Environment;
-import android.support.annotation.Nullable;
 
 import com.edwardstock.multipicker.data.MediaFile;
 
@@ -141,6 +140,15 @@ public class PickerUtils {
     public static boolean isGifFormat(MediaFile image) {
         String extension = image.getPath().substring(image.getPath().lastIndexOf(".") + 1, image.getPath().length());
         return extension.equalsIgnoreCase("gif");
+    }
+
+    public static String mimeFrom(String path) {
+        return URLConnection.guessContentTypeFromName(path);
+    }
+
+    public static boolean isImageFormat(String path) {
+        String mimeType = URLConnection.guessContentTypeFromName(path);
+        return mimeType != null && mimeType.startsWith("image");
     }
 
     public static boolean isVideoFormat(String path) {

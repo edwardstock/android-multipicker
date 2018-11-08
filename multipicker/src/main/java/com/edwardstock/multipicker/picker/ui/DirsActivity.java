@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Surface;
@@ -91,6 +92,22 @@ public class DirsActivity extends PickerActivity implements DirsView {
     @Override
     public void showEmpty(boolean show) {
         emptyText.setVisibility(show ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
+    public void setOnRefreshListener(SwipeRefreshLayout.OnRefreshListener listener) {
+        swipeRefreshLayout.setOnRefreshListener(listener);
+    }
+
+    @Override
+    public void showRefreshProgress() {
+        swipeRefreshLayout.setRefreshing(true);
+        hideProgress();
+    }
+
+    @Override
+    public void hideRefreshProgress() {
+        swipeRefreshLayout.setRefreshing(false);
     }
 
     @Override
