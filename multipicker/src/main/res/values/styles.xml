@@ -19,14 +19,14 @@
 
     <style name="mp_ExoMediaButton_Play" parent="ExoMediaButton.Play">
         <item name="android:src">@drawable/mp_ic_play_circle_filled</item>
-        <item name="android:layout_width">56dp</item>
-        <item name="android:layout_height">56dp</item>
+        <item name="android:layout_width">76dp</item>
+        <item name="android:layout_height">76dp</item>
     </style>
 
     <style name="mp_ExoMediaButton_Pause" parent="ExoMediaButton.Pause">
         <item name="android:src">@drawable/mp_ic_pause_circle_filled</item>
-        <item name="android:layout_width">56dp</item>
-        <item name="android:layout_height">56dp</item>
+        <item name="android:layout_width">76dp</item>
+        <item name="android:layout_height">76dp</item>
     </style>
 
     <style name="mp_toolbar" parent="mp_AppTheme">
@@ -43,7 +43,7 @@
 
     <style name="mp_Dark" parent="Theme.AppCompat.NoActionBar">
         <item name="windowNoTitle">true</item>
-        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowFullscreen">false</item>
         <item name="colorPrimary">@android:color/white</item>
         <item name="colorPrimaryDark">@android:color/black</item>
         <item name="android:textColorPrimary">@android:color/white</item>
@@ -51,9 +51,10 @@
         <item name="subtitleTextColor">@android:color/black</item>
         <item name="actionOverflowButtonStyle">@style/mp_Dark.Menu</item>
 
-        <item name="windowActionBarOverlay">true</item>
-        <item name="android:windowTranslucentStatus" tools:targetApi="kitkat">true</item>
-        <item name="android:windowTranslucentNavigation" tools:targetApi="kitkat">true</item>
+        <!--<item name="android:windowDrawsSystemBarBackgrounds" tools:targetApi="lollipop">true</item>-->
+        <!--<item name="windowActionBarOverlay">true</item>-->
+        <!--<item name="android:windowTranslucentStatus" tools:targetApi="kitkat">true</item>-->
+        <!--<item name="android:windowTranslucentNavigation" tools:targetApi="kitkat">true</item>-->
     </style>
 
     <style name="mp_Dark.Menu" parent="Widget.AppCompat.ActionButton.Overflow">

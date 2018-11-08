@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<android.support.design.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -12,7 +12,7 @@
 
     <android.support.v7.widget.Toolbar
         android:id="@+id/toolbar"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/mp_black_alpha_50"
         android:elevation="10dp"
@@ -27,10 +27,10 @@
         app:titleTextColor="?android:attr/textColorSecondary"
         />
 
-    <android.support.v4.view.ViewPager
+    <com.edwardstock.multipicker.internal.widgets.TouchImageViewPager
         android:id="@+id/mp_preview_pager"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -39,8 +39,9 @@
 
     <TextView
         android:id="@+id/mp_error_view"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="center"
         android:layout_marginStart="@dimen/mp_spacing"
         android:layout_marginEnd="@dimen/mp_spacing"
         android:gravity="center"
@@ -55,5 +56,4 @@
         tools:visibility="visible"
         />
 
-
-</android.support.constraint.ConstraintLayout>
+</android.support.design.widget.CoordinatorLayout>

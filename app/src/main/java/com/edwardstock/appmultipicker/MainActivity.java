@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Button;
+import android.widget.TextView;
 
 import com.edwardstock.multipicker.MultiPicker;
 import com.edwardstock.multipicker.data.MediaFile;
@@ -16,12 +17,14 @@ import timber.log.Timber;
 public class MainActivity extends AppCompatActivity {
 
     static int REQ = 100;
+    TextView result;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Timber.plant(new Timber.DebugTree());
         setContentView(R.layout.activity_main);
+        result = findViewById(R.id.result);
 
         Button launch = findViewById(R.id.launch);
 
@@ -43,9 +46,11 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQ) {
             List<MediaFile> files = MultiPicker.handleActivityResult(resultCode, data);
             Timber.d("OnResult: %d", resultCode);
+            StringBuilder sb = new StringBuilder();
             for(MediaFile item: files) {
-                Timber.d("Selected file: %s", item);
+                sb.append(item.toString());
             }
+            result.setText(sb.toString());
         }
     }
 }

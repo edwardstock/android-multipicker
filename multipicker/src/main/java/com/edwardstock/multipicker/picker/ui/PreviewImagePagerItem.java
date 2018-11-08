@@ -19,7 +19,7 @@ import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.helpers.DisplayHelper;
 import com.edwardstock.multipicker.internal.helpers.ExceptionHelper;
-import com.jsibbold.zoomage.ZoomageView;
+import com.github.chrisbanes.photoview.PhotoView;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -31,7 +31,7 @@ import timber.log.Timber;
  */
 public class PreviewImagePagerItem extends PreviewPagerItem {
 
-    @BindView(R2.id.mp_photo_view) ZoomageView imageView;
+    @BindView(R2.id.mp_photo_view) PhotoView imageView;
 
     @Nullable
     @Override
@@ -40,14 +40,9 @@ public class PreviewImagePagerItem extends PreviewPagerItem {
         ButterKnife.bind(this, view);
 
         progress.setVisibility(View.VISIBLE);
-        btnSend.setOnClickListener(v -> {
-//            submitResult(Collections.singletonList(mFile));
-        });
-
         imageView.setOnClickListener(v -> {
             safeActivity(PreviewerActivity::toggleUiVisibility);
         });
-
 
         return view;
     }

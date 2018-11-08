@@ -80,6 +80,7 @@ public final class MultiPicker {
     }
 
     public void start() {
+        mConfig.requestCode(REQUEST_CODE_MULTIPICKER_DEFAULT);
         start(REQUEST_CODE_MULTIPICKER_DEFAULT);
     }
 
@@ -88,6 +89,7 @@ public final class MultiPicker {
     }
 
     public void start(int requestCode) {
+        mConfig.requestCode(REQUEST_CODE_MULTIPICKER_DEFAULT);
         new DirsActivity.Builder(mActivity.get(), mConfig)
                 .start(requestCode);
     }

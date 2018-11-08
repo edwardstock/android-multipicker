@@ -7,8 +7,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
@@ -17,6 +19,7 @@ import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.data.MediaFile;
 
 import java.lang.ref.WeakReference;
+import java.util.Collections;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -29,6 +32,7 @@ import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_MEDIA_FILE;
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
 public abstract class PreviewPagerItem extends Fragment {
+    private final static String EXTRA_POS = "EXTRA_POS";
     @BindView(R2.id.mp_selection_action_add) ImageView btnAdd;
     @BindView(R2.id.mp_selection_action_send) ImageView btnSend;
     @BindView(R2.id.mp_progress) ProgressBar progress;
@@ -36,27 +40,19 @@ public abstract class PreviewPagerItem extends Fragment {
     private MediaFile mMediaFile;
     private Dir mDir;
     private WeakReference<PreviewerActivity> mActivity;
-    protected PreviewerActivity.SystemUiVisibilityListener mSystemUiVisibilityListener = new PreviewerActivity.SystemUiVisibilityListener() {
-        @Override
-        public void onChangeVisibleState(boolean visibleNow) {
-            if (visibleNow) {
-                safeActivity(act -> {
-                    actionGroup.animate()
-                            .translationY(-act.getNavigationBarHeight())
-                            .start();
-                });
-            } else {
-                actionGroup.animate()
-                        .translationY(0)
-                        .start();
-            }
-        }
-    };
 
-    public static PreviewPagerItem newInstance(MediaFile file, Dir dir) {
+    protected enum Orient {
+        Portrait,
+        PortraitReverse,
+        Landscape,
+        LandscapeReverse
+    }
+
+    public static PreviewPagerItem newInstance(int pos, MediaFile file, Dir dir) {
         Bundle args = new Bundle();
         args.putParcelable(EXTRA_MEDIA_FILE, file);
         args.putParcelable(EXTRA_DIR, dir);
+        args.putInt(EXTRA_POS, pos);
 
         PreviewPagerItem fragment;
 
@@ -82,6 +78,22 @@ public abstract class PreviewPagerItem extends Fragment {
         mActivity = null;
     }
 
+    public Orient getScreenOrientation(Context context) {
+        final int screenOrientation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
+        switch (screenOrientation) {
+            case Surface.ROTATION_0:
+                return Orient.Portrait;
+            case Surface.ROTATION_180:
+                return Orient.PortraitReverse;
+            case Surface.ROTATION_90:
+                return Orient.Landscape;
+            case Surface.ROTATION_270:
+                return Orient.LandscapeReverse;
+            default:
+                return Orient.LandscapeReverse;
+        }
+    }
+
     public MediaFile getMediaFile() {
         return mMediaFile;
     }
@@ -94,8 +106,16 @@ public abstract class PreviewPagerItem extends Fragment {
         mMediaFile = getArguments().getParcelable(EXTRA_MEDIA_FILE);
         mDir = getArguments().getParcelable(EXTRA_DIR);
 
-        safeActivity(act -> {
-            act.addVisibilityListener(mSystemUiVisibilityListener);
+        btnSend.setOnClickListener(v -> {
+            safeActivity(act -> {
+                act.submitResult(Collections.singletonList(getMediaFile()));
+            });
+        });
+
+        btnAdd.setOnClickListener(v -> {
+            safeActivity(act -> {
+                act.submitSelection(getMediaFile());
+            });
         });
 
         initMedia(mMediaFile);
@@ -103,12 +123,10 @@ public abstract class PreviewPagerItem extends Fragment {
         return view;
     }
 
-    @Override
-    public void onDestroyView() {
-        safeActivity(act -> {
-            act.removeVisibilityListener(mSystemUiVisibilityListener);
-        });
-        super.onDestroyView();
+    protected void onPageActive() {
+    }
+
+    protected void onPageInactive() {
     }
 
     protected void safeActivity(ActConsumer actConsumer) {

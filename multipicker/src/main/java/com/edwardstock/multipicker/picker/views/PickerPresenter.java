@@ -50,14 +50,15 @@ public abstract class PickerPresenter<V extends PickerView> extends BaseFsPresen
 
     @CallSuper
     public void handleExtras(int requestCode, int resultCode, Intent intent) {
-        MediaFile file = new MediaFile(mCameraHandler.getCurrentMediaPath());
         if (requestCode == REQUEST_CAPTURE_PHOTO) {
+            MediaFile file = new MediaFile(mCameraHandler.getCurrentMediaPath());
             if (resultCode == RESULT_OK) {
                 callOnView(v -> v.scanMedia(file, this::onScanned));
             } else if (resultCode == RESULT_CANCELED) {
                 abortCapture();
             }
         } else if (requestCode == REQUEST_CAPTURE_VIDEO) {
+            MediaFile file = new MediaFile(mCameraHandler.getCurrentMediaPath());
             if (resultCode == RESULT_OK) {
                 callOnView(v -> v.scanMedia(file, this::onScanned));
             } else if (resultCode == RESULT_CANCELED) {

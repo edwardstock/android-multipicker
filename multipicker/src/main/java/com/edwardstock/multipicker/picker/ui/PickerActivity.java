@@ -1,6 +1,7 @@
 package com.edwardstock.multipicker.picker.ui;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -52,6 +53,7 @@ abstract class PickerActivity extends AppCompatActivity implements PickerView, E
     private PickerConfig mConfig;
     private GridSpacingItemDecoration mGridSpacingItemDecoration;
     private boolean mScannedDirs = false;
+    public final static int RESULT_ADD_FILE_TO_SELECTION = Activity.RESULT_FIRST_USER+1;
 
     @Override
     public void capturePhotoWithPermissions(CameraHandler cameraHandler, int requestCode) {
@@ -236,13 +238,17 @@ abstract class PickerActivity extends AppCompatActivity implements PickerView, E
             }).start();
         }
 
-
         setResult(RESULT_CANCELED);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == getConfig().getRequestCode() && resultCode == RESULT_OK) {
+            setResult(resultCode, data);
+            finish();
+            return;
+        }
         // get fragment presenter
         getPresenter().handleExtras(requestCode, resultCode, data);
     }

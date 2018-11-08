@@ -44,6 +44,7 @@ public final class PickerConfig implements Parcelable {
     private int mLimit = 0; // 0 - no limit
     private ArrayList<String> mExcludedFiles = new ArrayList<>(0);
     private MultiPicker mPicker;
+    private int mRequestCode;
 
     PickerConfig(MultiPicker picker) {
         mPicker = picker;
@@ -63,6 +64,7 @@ public final class PickerConfig implements Parcelable {
         mTitle = in.readString();
         mLimit = in.readInt();
         in.readList(mExcludedFiles, String.class.getClassLoader());
+        mRequestCode = in.readInt();
     }
 
     @Override
@@ -83,6 +85,7 @@ public final class PickerConfig implements Parcelable {
             mExcludedFiles = new ArrayList<>(0);
         }
         dest.writeList(mExcludedFiles);
+        dest.writeInt(mRequestCode);
     }
 
     public PickerConfig excludeFile(MediaFile file) {
@@ -111,7 +114,7 @@ public final class PickerConfig implements Parcelable {
     }
 
     public PickerConfig excludeFilesStrings(Collection<String> filePaths) {
-        if(filePaths == null) {
+        if (filePaths == null) {
             return this;
         }
 
@@ -249,7 +252,16 @@ public final class PickerConfig implements Parcelable {
         return this;
     }
 
+    public int getRequestCode() {
+        return mRequestCode;
+    }
+
     public MultiPicker build() {
         return mPicker.withConfig(this);
+    }
+
+    public PickerConfig requestCode(int requestCode) {
+        mRequestCode = requestCode;
+        return this;
     }
 }

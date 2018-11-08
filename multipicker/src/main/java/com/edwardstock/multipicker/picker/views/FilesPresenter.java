@@ -1,5 +1,6 @@
 package com.edwardstock.multipicker.picker.views;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -192,6 +193,12 @@ public class FilesPresenter extends PickerPresenter<FilesView> implements MediaF
 
     public void setScroll(int position) {
         mScrollPosition = position;
+    }
+
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        callOnView(v->{
+            v.selectFile(data.getParcelableExtra(PickerConst.EXTRA_MEDIA_FILE));
+        });
     }
 
     @Override

@@ -4,4 +4,9 @@
         android:duration="360"
         android:fromXDelta="0"
         android:fromYDelta="-120"/>
+
+    <alpha
+        android:duration="360"
+        android:fromAlpha="0"
+        android:toAlpha="1"/>
 </set>

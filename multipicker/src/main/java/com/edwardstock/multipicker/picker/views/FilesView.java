@@ -1,5 +1,6 @@
 package com.edwardstock.multipicker.picker.views;
 
+import android.os.Parcelable;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
@@ -28,4 +29,6 @@ public interface FilesView extends PickerView {
     void setSelectionSubmitEnabled(boolean enabled);
     void scrollTo(int position);
     void removeFileFromMediaDB(File file);
+    void selectFile(MediaFile mediaFile);
+
 }

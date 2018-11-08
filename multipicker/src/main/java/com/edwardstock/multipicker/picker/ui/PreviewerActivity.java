@@ -2,18 +2,21 @@ package com.edwardstock.multipicker.picker.ui;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.view.View;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
-import com.annimon.stream.Stream;
 import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
@@ -21,14 +24,17 @@ import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.ActivityBuilder;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
+import com.edwardstock.multipicker.internal.helpers.DisplayHelper;
+import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.views.PickerPresenter;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.WeakHashMap;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import timber.log.Timber;
 
 import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_CONFIG;
 import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_DIR;
@@ -40,18 +46,34 @@ import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_MEDIA_FILE;
  */
 public class PreviewerActivity extends PickerActivity {
 
+    private final static String STATE_LAST_PAGE = "STATE_LAST_PAGE";
+    private final static String STATE_DIR = "STATE_DIR";
+    private final static String STATE_MEDIA_FILE = "STATE_MEDIA_FILE";
     @BindView(R2.id.mp_preview_pager) ViewPager pager;
     @BindView(R2.id.mp_error_view) TextView errorView;
-
     private Dir mDir;
     private MediaFile mFile;
     private List<MediaFile> mFiles;
     private FragmentStatePagerAdapter mAdapter;
     private boolean mHiddenControls;
-    private List<SystemUiVisibilityListener> mSystemUiVisibilityListeners = new ArrayList<>();
+    private int mLastPage = -1;
+    private WeakHashMap<Integer, PreviewPagerItem> mPages = new WeakHashMap<>();
+    private int mPrevPage = 0;
 
     public Dir getDir() {
         return mDir;
+    }
+
+    public final void submitSelection(MediaFile mediaFile) {
+        Intent result = new Intent();
+        result.putExtra(PickerConst.EXTRA_MEDIA_FILE, mediaFile);
+        setResult(RESULT_ADD_FILE_TO_SELECTION, result);
+        finish();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        return true;
     }
 
     @Override
@@ -66,48 +88,6 @@ public class PreviewerActivity extends PickerActivity {
         errorView.setText(error);
     }
 
-    @Override
-    public void onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            hideSystemUI();
-        }
-    }
-
-    public void hideSystemUI() {
-        // Enables regular immersive mode.
-        // For "lean back" mode, remove SYSTEM_UI_FLAG_IMMERSIVE.
-        // Or for "sticky immersive," replace it with SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-        View decorView = getWindow().getDecorView();
-        int flags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                // Hide the nav bar and status bar
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_FULLSCREEN;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            flags |= View.SYSTEM_UI_FLAG_IMMERSIVE;
-        }
-        decorView.setSystemUiVisibility(flags);
-
-        Stream.of(mSystemUiVisibilityListeners)
-                .forEach(item -> item.onChangeVisibleState(false));
-    }
-
-    // Shows the system bars by removing all the flags
-// except for the ones that make the content appear under the system bars.
-    public void showSystemUI() {
-        View decorView = getWindow().getDecorView();
-        decorView.setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-
-        Stream.of(mSystemUiVisibilityListeners)
-                .forEach(item -> item.onChangeVisibleState(true));
-    }
-
     public int getStatusBarHeight() {
         int result = 0;
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
@@ -118,6 +98,10 @@ public class PreviewerActivity extends PickerActivity {
     }
 
     public int getNavigationBarHeight() {
+        if (!hasNavBar()) {
+            return 0;
+        }
+
         int result = 0;
         int resourceId = getResources().getIdentifier("navigation_bar_height", "dimen", "android");
         if (resourceId > 0) {
@@ -127,21 +111,46 @@ public class PreviewerActivity extends PickerActivity {
     }
 
     public void toggleUiVisibility() {
-        if (!mHiddenControls) {
-            hideSystemUI();
+        if (mHiddenControls) {
+            toolbar.startAnimation(AnimationUtils.loadAnimation(PreviewerActivity.this, R.anim.slide_down));
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().show();
+            }
         } else {
-            showSystemUI();
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().hide();
+            }
+            toolbar.startAnimation(AnimationUtils.loadAnimation(PreviewerActivity.this, R.anim.slide_up));
         }
+
         mHiddenControls = !mHiddenControls;
     }
 
-    public void addVisibilityListener(SystemUiVisibilityListener listener) {
-        mSystemUiVisibilityListeners.add(listener);
-        listener.onChangeVisibleState(!mHiddenControls);
+    public boolean isShowingSystemUi() {
+        return !mHiddenControls;
     }
 
-    public void removeVisibilityListener(SystemUiVisibilityListener listener) {
-        mSystemUiVisibilityListeners.remove(listener);
+    public boolean hasNavBar() {
+        boolean hasPhysicalBackAndHomeKey = KeyCharacterMap.deviceHasKey(KeyEvent.KEYCODE_BACK);
+        hasPhysicalBackAndHomeKey = hasPhysicalBackAndHomeKey && KeyCharacterMap.deviceHasKey(KeyEvent.KEYCODE_HOME);
+        int id = getResources().getIdentifier("config_showNavigationBar", "bool", "android");
+        return !hasPhysicalBackAndHomeKey || (id > 0 && getResources().getBoolean(id)) || ViewConfiguration.get(this).hasPermanentMenuKey();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Timber.d("Destroy previewer");
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (mLastPage != -1) {
+            outState.putInt(STATE_LAST_PAGE, mLastPage);
+            outState.putParcelable(STATE_DIR, mDir);
+            outState.putParcelable(STATE_MEDIA_FILE, mFile);
+        }
     }
 
     @Override
@@ -155,24 +164,21 @@ public class PreviewerActivity extends PickerActivity {
         mDir = getIntent().getParcelableExtra(EXTRA_DIR);
         mFile = getIntent().getParcelableExtra(EXTRA_MEDIA_FILE);
 
-        getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility -> {
-            if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == View.VISIBLE) {
-                toolbar.startAnimation(AnimationUtils.loadAnimation(PreviewerActivity.this, R.anim.slide_down));
-                if (getSupportActionBar() != null) {
-                    getSupportActionBar().show();
-                }
-            } else {
-                if (getSupportActionBar() != null) {
-                    getSupportActionBar().hide();
-                }
-                toolbar.startAnimation(AnimationUtils.loadAnimation(PreviewerActivity.this, R.anim.slide_up));
+        if (savedInstanceState != null) {
+            if (savedInstanceState.containsKey(STATE_LAST_PAGE)) {
+                mLastPage = savedInstanceState.getInt(STATE_LAST_PAGE, -1);
             }
-        });
 
-        showSystemUI();
-        final ViewGroup.MarginLayoutParams lp = ((ViewGroup.MarginLayoutParams) toolbar.getLayoutParams());
-        lp.topMargin = getStatusBarHeight();
-        toolbar.setLayoutParams(lp);
+            if (savedInstanceState.containsKey(STATE_DIR)) {
+                mDir = savedInstanceState.getParcelable(STATE_DIR);
+            }
+
+            if (savedInstanceState.containsKey(STATE_MEDIA_FILE)) {
+                mFile = savedInstanceState.getParcelable(STATE_MEDIA_FILE);
+            }
+        }
+        setTitle(mDir.getName());
+        toolbar.setTitle(mDir.getName());
 
         new MediaFileLoader(this).loadDeviceImages(getConfig(), mDir, new MediaFileLoader.OnLoadListener() {
             @Override
@@ -182,8 +188,11 @@ public class PreviewerActivity extends PickerActivity {
 
             @Override
             public void onFilesLoadedSuccess(List<MediaFile> images, List<Dir> dirList) {
-                mFiles = images;
-                initPager();
+                runOnUiThread(() -> {
+                    Timber.d("Files loaded: %d (%s)", images.size(), Thread.currentThread().getName());
+                    mFiles = images;
+                    initPager();
+                });
             }
         });
     }
@@ -197,7 +206,10 @@ public class PreviewerActivity extends PickerActivity {
         mAdapter = new FragmentStatePagerAdapter(getSupportFragmentManager()) {
             @Override
             public Fragment getItem(int i) {
-                return PreviewPagerItem.newInstance(mFiles.get(i), mDir);
+                if (!mPages.containsKey(i)) {
+                    mPages.put(i, PreviewPagerItem.newInstance(i, mFiles.get(i), mDir));
+                }
+                return mPages.get(i);
             }
 
             @Override
@@ -206,19 +218,52 @@ public class PreviewerActivity extends PickerActivity {
             }
         };
 
+        pager.setOffscreenPageLimit(0);
+        pager.setPageMargin(DisplayHelper.dpToPx(this, 8));
         pager.setAdapter(mAdapter);
-        pager.setCurrentItem(mFiles.indexOf(mFile));
+        mAdapter.notifyDataSetChanged();
+
+        if (mLastPage == -1) {
+            mLastPage = mFiles.indexOf(mFile);
+            mPrevPage = mLastPage;
+        }
+
+        new Handler(Looper.getMainLooper()).post(() -> {
+            pager.setCurrentItem(mLastPage, false);
+        });
         pager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
+                mPrevPage = mLastPage;
+                mLastPage = position;
+                doubleCheckPage(mPrevPage, PreviewPagerItem::onPageInactive);
+                doubleCheckPage(mLastPage, PreviewPagerItem::onPageActive);
+                Timber.d("Set page %d inactive", mPrevPage);
+                Timber.d("Set page %d active", mLastPage);
                 toolbar.setSubtitle(String.format(Locale.getDefault(), "%d / %d", pager.getCurrentItem() + 1, mFiles.size()));
-
             }
         });
-        toolbar.setTitle(mDir.getName());
-        toolbar.setSubtitle(String.format(Locale.getDefault(), "%d / %d", pager.getCurrentItem() + 1, mFiles.size()));
 
+        toolbar.setSubtitle(String.format(Locale.getDefault(), "%d / %d", pager.getCurrentItem() + 1, mFiles.size()));
+    }
+
+    private void doubleCheckPage(int position, Consumer<PreviewPagerItem> pt) {
+        if (mPages == null) {
+            return;
+        }
+        if (!mPages.containsKey(position)) {
+            return;
+        }
+        final PreviewPagerItem item = mPages.get(position);
+        if (item == null) {
+            return;
+        }
+        pt.onItem(item);
+    }
+
+    private interface Consumer<PT> {
+        void onItem(PT pt);
     }
 
     public interface SystemUiVisibilityListener {

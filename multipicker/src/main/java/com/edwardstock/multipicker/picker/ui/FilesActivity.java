@@ -62,6 +62,7 @@ import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_DIR;
 public class FilesActivity extends PickerActivity implements FilesView {
 
     private final static String LIST_STATE = "LIST_STATE";
+    private final static String LAST_PREVIEW_STATE = "LAST_PREVIEW";
     FilesPresenter presenter;
     @BindView(R2.id.list) RecyclerView list;
     @BindView(R2.id.mp_selection_title) TextView selectionTitle;
@@ -76,8 +77,6 @@ public class FilesActivity extends PickerActivity implements FilesView {
     private List<MediaFile> mSelected = new ArrayList<>(10);
     private MediaFile mLastPreview = null;
     private Parcelable mListState;
-
-    private final static String LAST_PREVIEW_STATE = "LAST_PREVIEW";
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -256,20 +255,20 @@ public class FilesActivity extends PickerActivity implements FilesView {
     }
 
     @Override
-    public void startPreview(MediaFile file, View sharedView) {
-        mLastPreview = file;
-
-//        if (file.isVideo()) {
-//            final Uri uri = Uri.parse(file.getPath());
-//            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-//            intent.setDataAndType(uri, "video/*");
-//            startActivity(intent);
-//        } else {
-        PreviewerActivity.Builder pb = new PreviewerActivity.Builder(this, getConfig(), mDir, file);
-        pb.start();
-//        }
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if(requestCode ==getConfig().getRequestCode() && resultCode == RESULT_ADD_FILE_TO_SELECTION) {
+            presenter.onActivityResult(requestCode, resultCode, data);
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
+    @Override
+    public void startPreview(MediaFile file, View sharedView) {
+        mLastPreview = file;
+        PreviewerActivity.Builder pb = new PreviewerActivity.Builder(this, getConfig(), mDir, file);
+        pb.start(getConfig().getRequestCode());
+    }
 
     @Override
     public void clearSelection() {
@@ -348,6 +347,13 @@ public class FilesActivity extends PickerActivity implements FilesView {
         }
     }
 
+    @Override
+    public void selectFile(MediaFile mediaFile) {
+        if(mSelectionTracker != null && mediaFile != null) {
+            mSelectionTracker.select(mediaFile);
+        }
+    }
+
     public void addSelection(MediaFile selection) {
         if (selection != null && mSelectionTracker != null) {
             mSelectionTracker.select(selection);
@@ -408,6 +414,11 @@ public class FilesActivity extends PickerActivity implements FilesView {
     }
 
     @Override
+    public FilesPresenter getPresenter() {
+        return presenter;
+    }
+
+    @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         if (savedInstanceState != null && savedInstanceState.containsKey(LAST_PREVIEW_STATE)) {
@@ -417,11 +428,6 @@ public class FilesActivity extends PickerActivity implements FilesView {
         if (mSelectionTracker != null && savedInstanceState != null) {
             mSelectionTracker.onRestoreInstanceState(savedInstanceState);
         }
-    }
-
-    @Override
-    public FilesPresenter getPresenter() {
-        return presenter;
     }
 
     @Override

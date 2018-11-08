@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.Fragment;
@@ -34,6 +35,7 @@ public abstract class ActivityBuilder {
     private WeakReference<Fragment> mFragment;
     private WeakReference<Service> mService;
     private WeakHashMap<String, View> mSharedViews;
+    private int mAdditionalFlags = 0;
 
     public ActivityBuilder(@NonNull Activity from) {
         mActivity = new WeakReference<>(checkNotNull(from, "Activity can't be null"));
@@ -179,6 +181,11 @@ public abstract class ActivityBuilder {
         return mIntent;
     }
 
+    public ActivityBuilder addFlag(int intentFlag) {
+        mAdditionalFlags |= intentFlag;
+        return this;
+    }
+
     protected Activity getActivity() {
         if (mActivity != null && mActivity.get() != null) {
             return mActivity.get();
@@ -187,7 +194,9 @@ public abstract class ActivityBuilder {
         return null;
     }
 
+    @CallSuper
     protected void onBeforeStart(Intent intent) {
+        intent.addFlags(mAdditionalFlags);
     }
 
     protected void onAfterStart() {
