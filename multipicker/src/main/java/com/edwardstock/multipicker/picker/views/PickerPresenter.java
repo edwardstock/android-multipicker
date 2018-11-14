@@ -1,5 +1,6 @@
 package com.edwardstock.multipicker.picker.views;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import android.support.annotation.CallSuper;
 
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.CameraHandler;
+import com.edwardstock.multipicker.internal.MediaFileLoader;
 
 import timber.log.Timber;
 
@@ -58,11 +60,24 @@ public abstract class PickerPresenter<V extends PickerView> extends BaseFsPresen
                 abortCapture();
             }
         } else if (requestCode == REQUEST_CAPTURE_VIDEO) {
-            MediaFile file = new MediaFile(mCameraHandler.getCurrentMediaPath());
-            if (resultCode == RESULT_OK) {
-                callOnView(v -> v.scanMedia(file, this::onScanned));
-            } else if (resultCode == RESULT_CANCELED) {
-                abortCapture();
+            final MediaFile file;
+            final Uri uri = intent.getData();
+            if (uri == null) {
+                Timber.e("Camera intent data is null, but must contains uri data");
+                return;
+            }
+            if (getView() != null) {
+                file = MediaFileLoader.resolveFileFromUri(((Activity) getView()), uri, true);
+                if (file == null) {
+                    Timber.e("Unable to resolve content %s", uri.toString());
+                    return;
+                }
+
+                if (resultCode == RESULT_OK) {
+                    onScanned(file.getPath(), file.getUri());
+                } else if (resultCode == RESULT_CANCELED) {
+                    abortCapture();
+                }
             }
         }
     }

@@ -57,18 +57,19 @@ public final class CameraHandler {
 
     public Intent getCameraVideoIntent(Context context, PickerConfig config, PickerSavePath savePath) {
         Intent intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-        File videoFile = PickerUtils.createVideoFile(firstNonNull(savePath, config.getVideoSavePath()));
-        if (videoFile != null) {
-            Context appContext = context.getApplicationContext();
-            Uri uri = FileProvider.getUriForFile(appContext, getProviderName(context), videoFile);
-            mCurrentMediaPath = "file:" + videoFile.getAbsolutePath();
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+//        File videoFile = PickerUtils.createVideoFile(firstNonNull(savePath, config.getVideoSavePath()));
+//        if (videoFile != null) {
+//            Context appContext = context.getApplicationContext();
+//            Uri uri = FileProvider.getUriForFile(appContext, getProviderName(context), videoFile);
+//            mCurrentMediaPath = "file:" + videoFile.getAbsolutePath();
+//            intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
 
-            PickerUtils.grantAppPermission(context, intent, uri);
+//            PickerUtils.grantAppPermission(context, intent, uri);
 
-            return intent;
-        }
-        return null;
+//            return intent;
+//        }
+//        return null;
+        return intent;
     }
 
     public void getVideo(final Context context, final OnImageReadyListener imageReadyListener) {
@@ -139,7 +140,11 @@ public final class CameraHandler {
         }
     }
 
+    @Nullable
     public String getCurrentMediaPath() {
+        if (mCurrentMediaPath == null) {
+            return null;
+        }
         return mCurrentMediaPath.replace("file:", "");
     }
 

@@ -25,7 +25,12 @@ public class ViewProxy<View extends MvpView> implements MvpView {
     }
 
     final public boolean hasView() {
-        return mView != null && mView.get() != null && !mView.isEnqueued();
+        if (mView == null || mView.get() == null) {
+            return false;
+        }
+
+        final View v = mView.get();
+        return v != null;
     }
 
     final public void defer(Task task) {

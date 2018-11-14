@@ -32,6 +32,14 @@ public abstract class MvpPresenter<View extends MvpView> implements LifecycleObs
         }
     }
 
+    public View getView() {
+        if (mView.hasView()) {
+            return mView.getView();
+        } else {
+            return null;
+        }
+    }
+
     public final <T extends LifecycleOwner & MvpView> void attachToLifecycle(T registryOwner) {
         mLifecycle = registryOwner.getLifecycle();
         mLifecycle.addObserver(this);

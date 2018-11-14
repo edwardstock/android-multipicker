@@ -4,6 +4,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
+import android.net.Uri;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 
@@ -31,6 +32,7 @@ import timber.log.Timber;
 
 public class MediaFileLoader {
 
+    private final static Object sMMRMutex = new Object();
     private final String[] mPhotoProjection = new String[]{
             MediaStore.Images.Media._ID,
             MediaStore.Images.Media.DISPLAY_NAME,
@@ -64,6 +66,50 @@ public class MediaFileLoader {
 
     public MediaFileLoader(Context context) {
         mContext = context;
+    }
+
+    /**
+     * @param context
+     * @param contentUri Takes uri like this: content://external/video/54
+     * @param video true - video file resolving or false - photo
+     * @return
+     */
+    public static MediaFile resolveFileFromUri(Context context, Uri contentUri, boolean video) {
+        Cursor cursor = null;
+        try {
+            String[] proj;
+            if (video) {
+                proj = new String[]{
+                        MediaStore.Video.Media._ID,
+                        MediaStore.Video.Media.DISPLAY_NAME,
+                        MediaStore.Video.Media.DATA,
+                };
+            } else {
+                proj = new String[]{
+                        MediaStore.Images.Media._ID,
+                        MediaStore.Images.Media.DISPLAY_NAME,
+                        MediaStore.Images.Media.DATA,
+                };
+            }
+
+            cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
+            if (cursor == null) {
+                return null;
+            }
+
+            int idIdx = cursor.getColumnIndexOrThrow(proj[0]);
+            int nameIdx = cursor.getColumnIndexOrThrow(proj[1]);
+            int pathIdx = cursor.getColumnIndexOrThrow(proj[2]);
+            cursor.moveToFirst();
+            String path = cursor.getString(pathIdx);
+            long id = cursor.getLong(idIdx);
+            String name = cursor.getString(nameIdx);
+            return new MediaFile(id, name, path);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
     }
 
     @Nullable
@@ -122,14 +168,20 @@ public class MediaFileLoader {
     }
 
     private Bitmap createVideoThumbnail(String filePath) {
-        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-        mmr.setDataSource(filePath);
-        //api time unit is microseconds
-        try {
-            return mmr.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
-        } finally {
-            mmr.release();
+        synchronized (sMMRMutex) {
+            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+            try {
+                mmr.setDataSource(filePath);
+                return mmr.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+            } catch (Throwable t) {
+                final File f = new File(filePath);
+                Timber.w(t, "Unable to create view thumb for file=%s, exists=%b, flen=%d", filePath, f.exists(), f.length());
+            } finally {
+                mmr.release();
+            }
         }
+
+        return null;
     }
 
     public interface OnLoadListener {
@@ -268,17 +320,29 @@ public class MediaFileLoader {
             for (final MediaFile item : mFiles) {
                 final File f = PickerUtils.createVideoThumbFile(item);
                 if (f == null) {
-                    return;
+                    continue;
+                }
+
+                if (!f.exists() || f.length() == 0) {
+                    try {
+                        f.delete();
+                    } catch (Throwable ignore) {
+                    }
+                    continue;
                 }
 
                 final Bitmap bmp = createVideoThumbnail(item.getPath());
+                if (bmp == null) {
+                    continue;
+                }
+
                 try (FileOutputStream o = new FileOutputStream(f)) {
                     Timber.d("Write thumbnail for video %s: %s", item.getPath(), f.getAbsolutePath());
                     bmp.compress(Bitmap.CompressFormat.JPEG, 100, o);
                 } catch (FileNotFoundException e) {
-                    e.printStackTrace();
+                    Timber.e(e, "File not found");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Timber.e(e);
                 } finally {
                     bmp.recycle();
                 }

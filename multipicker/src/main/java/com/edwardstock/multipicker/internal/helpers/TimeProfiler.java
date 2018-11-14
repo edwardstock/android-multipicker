@@ -33,7 +33,11 @@ public class TimeProfiler {
             return;
         }
 
-        long start = profiles.get(tag.hashCode());
+        Long start = profiles.get(tag.hashCode());
+        if (start == null) {
+            profiles.remove(tag.hashCode());
+            return;
+        }
         float end = (System.nanoTime() - start) / 1000000f;
         Timber.tag("PROFILE").i("%s -> Time spent %sms", tag, end);
         profiles.remove(tag.hashCode());
