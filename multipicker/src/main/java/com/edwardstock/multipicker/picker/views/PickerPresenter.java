@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.CallSuper;
 
+import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.CameraHandler;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
@@ -25,6 +26,15 @@ public abstract class PickerPresenter<V extends PickerView> extends BaseFsPresen
     private final static int REQUEST_CAPTURE_PHOTO = 1010;
     private final static int REQUEST_CAPTURE_VIDEO = 1011;
     private CameraHandler mCameraHandler;
+    private PickerConfig mConfig;
+
+    public PickerConfig getConfig() {
+        return mConfig;
+    }
+
+    public void setConfig(PickerConfig config) {
+        mConfig = config;
+    }
 
     public PickerPresenter() {
         mCameraHandler = new CameraHandler();
@@ -60,24 +70,25 @@ public abstract class PickerPresenter<V extends PickerView> extends BaseFsPresen
                 abortCapture();
             }
         } else if (requestCode == REQUEST_CAPTURE_VIDEO) {
-            final MediaFile file;
-            final Uri uri = intent.getData();
-            if (uri == null) {
-                Timber.e("Camera intent data is null, but must contains uri data");
-                return;
-            }
-            if (getView() != null) {
-                file = MediaFileLoader.resolveFileFromUri(((Activity) getView()), uri, true);
-                if (file == null) {
-                    Timber.e("Unable to resolve content %s", uri.toString());
+            if (resultCode == RESULT_OK && intent != null) {
+                final MediaFile file;
+                final Uri uri = intent.getData();
+                if (uri == null) {
+                    Timber.e("Camera intent data is null, but must contains uri data");
                     return;
                 }
+                if (getView() != null) {
+                    file = MediaFileLoader.resolveFileFromUri(((Activity) getView()), uri, true);
+                    if (file == null) {
+                        Timber.e("Unable to resolve content %s", uri.toString());
+                        return;
+                    }
 
-                if (resultCode == RESULT_OK) {
+
                     onScanned(file.getPath(), file.getUri());
-                } else if (resultCode == RESULT_CANCELED) {
-                    abortCapture();
                 }
+            } else if (resultCode == RESULT_CANCELED) {
+                abortCapture();
             }
         }
     }

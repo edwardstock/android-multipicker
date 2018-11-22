@@ -3,6 +3,8 @@ package com.edwardstock.multipicker.data;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.gson.annotations.Expose;
+
 /**
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
@@ -20,7 +22,9 @@ public final class MediaSize implements Parcelable {
             return new MediaSize[size];
         }
     };
+    @Expose
     private int mWidth;
+    @Expose
     private int mHeight;
 
     public MediaSize(String width, String height) {

@@ -10,6 +10,7 @@ import android.widget.TextView;
 import com.edwardstock.multipicker.MultiPicker;
 import com.edwardstock.multipicker.data.MediaFile;
 
+import java.io.IOException;
 import java.util.List;
 
 import timber.log.Timber;
@@ -44,13 +45,20 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQ) {
-            List<MediaFile> files = MultiPicker.handleActivityResult(resultCode, data);
-            Timber.d("OnResult: %d", resultCode);
-            StringBuilder sb = new StringBuilder();
-            for(MediaFile item: files) {
-                sb.append(item.toString());
+            List<MediaFile> files;
+            try {
+                files = MultiPicker.handleActivityResult(resultCode, data);
+                Timber.d("OnResult: %d", resultCode);
+                StringBuilder sb = new StringBuilder();
+                for (MediaFile item : files) {
+                    sb.append(item.toString());
+                }
+                result.setText(sb.toString());
+            } catch (IOException e) {
+                Timber.e(e);
+                result.setText(e.getMessage());
             }
-            result.setText(sb.toString());
+
         }
     }
 }

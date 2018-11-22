@@ -2,10 +2,14 @@ package com.edwardstock.multipicker;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.RestrictTo;
 
 import com.annimon.stream.Stream;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.PickerSavePath;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.Expose;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -30,20 +34,32 @@ public final class PickerConfig implements Parcelable {
         }
     };
 
+    @Expose
     private boolean mShowPhotos = true;
+    @Expose
     private boolean mShowVideos = false;
+    @Expose
     private boolean mEnableCamera = true;
-    private PickerSavePath mVideoSavePath = PickerSavePath.DEFAULT;
+    @Expose
     private PickerSavePath mPhotoSavePath = PickerSavePath.DEFAULT;
+    @Expose
     private int mDirColumns = 2;
+    @Expose
     private int mDirColumnsTablet = 3;
+    @Expose
     private int mFileColumns = 3;
+    @Expose
     private int mFileColumnsTablet = 5;
+    @Expose
     private boolean mEnableSelectionAnimation = true;
+    @Expose
     private String mTitle = null;
+    @Expose
     private int mLimit = 0; // 0 - no limit
+    @Expose
     private ArrayList<String> mExcludedFiles = new ArrayList<>(0);
     private MultiPicker mPicker;
+    @Expose
     private int mRequestCode;
 
     PickerConfig(MultiPicker picker) {
@@ -54,7 +70,6 @@ public final class PickerConfig implements Parcelable {
         mShowPhotos = in.readByte() != 0x00;
         mShowVideos = in.readByte() != 0x00;
         mEnableCamera = in.readByte() != 0x00;
-        mVideoSavePath = in.readParcelable(PickerSavePath.class.getClassLoader());
         mPhotoSavePath = in.readParcelable(PickerSavePath.class.getClassLoader());
         mDirColumns = in.readInt();
         mDirColumnsTablet = in.readInt();
@@ -72,7 +87,6 @@ public final class PickerConfig implements Parcelable {
         dest.writeByte((byte) (mShowPhotos ? 0x01 : 0x00));
         dest.writeByte((byte) (mShowVideos ? 0x01 : 0x00));
         dest.writeByte((byte) (mEnableCamera ? 0x01 : 0x00));
-        dest.writeParcelable(mVideoSavePath, 0);
         dest.writeParcelable(mPhotoSavePath, 0);
         dest.writeInt(mDirColumns);
         dest.writeInt(mDirColumnsTablet);
@@ -196,24 +210,9 @@ public final class PickerConfig implements Parcelable {
         return this;
     }
 
-    public PickerConfig videoSavePath(PickerSavePath videoSavePath) {
-        mVideoSavePath = videoSavePath;
-        return this;
-    }
-
     @Override
     public int describeContents() {
         return 0;
-    }
-
-
-    public PickerSavePath getVideoSavePath() {
-        return mVideoSavePath;
-    }
-
-    public PickerConfig videoSavePath(String pathName) {
-        mVideoSavePath = new PickerSavePath(pathName, false);
-        return this;
     }
 
     public PickerSavePath getPhotoSavePath() {
@@ -263,5 +262,17 @@ public final class PickerConfig implements Parcelable {
     public PickerConfig requestCode(int requestCode) {
         mRequestCode = requestCode;
         return this;
+    }
+
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public static PickerConfig fromJson(String json) {
+        final Gson g = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+        return g.fromJson(json, PickerConfig.class);
+    }
+
+    @RestrictTo(RestrictTo.Scope.LIBRARY)
+    public final String toJson() {
+        final Gson g = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+        return g.toJson(this);
     }
 }

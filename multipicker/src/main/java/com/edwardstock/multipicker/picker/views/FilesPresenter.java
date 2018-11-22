@@ -7,7 +7,6 @@ import android.os.Looper;
 import android.view.View;
 
 import com.annimon.stream.Stream;
-import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.data.Dir;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
@@ -27,7 +26,6 @@ import timber.log.Timber;
  */
 public class FilesPresenter extends PickerPresenter<FilesView> implements MediaFileLoader.OnLoadListener {
     private final static String FILE_SCROLL_POSITION = "files_scroll_position";
-    private PickerConfig mConfig;
     private FilesAdapter mAdapter;
     private Dir mDir;
     private int mSelectionCnt = 0;
@@ -40,13 +38,12 @@ public class FilesPresenter extends PickerPresenter<FilesView> implements MediaF
     public void updateFiles(MediaFileLoader loader) {
         callOnView(FilesView::showProgress);
         Timber.d("Updating files");
-        loader.loadDeviceImages(mConfig, mDir, this);
+        loader.loadDeviceImages(getConfig(), mDir, this);
     }
 
     public void handleExtras(Bundle bundle) {
         mDir = bundle.getParcelable(PickerConst.EXTRA_DIR);
-        mConfig = bundle.getParcelable(PickerConst.EXTRA_CONFIG);
-        mAdapter = new FilesAdapter(mConfig, null, this::onFileClick);
+        mAdapter = new FilesAdapter(getConfig(), null, this::onFileClick);
     }
 
     @Override
@@ -177,10 +174,6 @@ public class FilesPresenter extends PickerPresenter<FilesView> implements MediaF
         callOnView(v -> {
             v.setSelectionSubmitEnabled(true);
         });
-    }
-
-    public PickerConfig getConfig() {
-        return mConfig;
     }
 
     public void setOnFileMeasuredListener(MediaFile file, FilesAdapter.OnMeasuredListener listener) {

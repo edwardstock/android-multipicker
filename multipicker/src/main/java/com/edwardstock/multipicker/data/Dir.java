@@ -5,6 +5,8 @@ import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.v4.util.ObjectsCompat;
 
+import com.google.gson.annotations.Expose;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +27,9 @@ public final class Dir implements Parcelable {
             return new Dir[size];
         }
     };
+    @Expose
     private String mName;
+    @Expose
     private List<MediaFile> mFiles;
 
     @NonNull

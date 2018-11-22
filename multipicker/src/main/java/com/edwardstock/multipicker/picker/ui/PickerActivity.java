@@ -35,9 +35,14 @@ import com.edwardstock.multipicker.internal.widgets.GridSpacingItemDecoration;
 import com.edwardstock.multipicker.picker.PickerConst;
 import com.edwardstock.multipicker.picker.views.PickerPresenter;
 import com.edwardstock.multipicker.picker.views.PickerView;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.List;
 
 import butterknife.BindView;
@@ -60,6 +65,25 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
     private PickerConfig mConfig;
     private GridSpacingItemDecoration mGridSpacingItemDecoration;
     private boolean mScannedDirs = false;
+
+    public PickerConfig getConfig() {
+        if (mConfig == null) {
+            final File in = new File(getCacheDir(), DirsActivity.CONFIG_FILE_NAME);
+
+            try (RandomAccessFile raf = new RandomAccessFile(in, "r")) {
+                byte[] cfgData = new byte[(int) in.length()];
+                raf.readFully(cfgData);
+                String cfgJson = new String(cfgData);
+                Timber.d("Read json config: %s", cfgJson);
+                mConfig = PickerConfig.fromJson(cfgJson);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return mConfig;
+    }
 
     @Override
     public void capturePhotoWithPermissions(CameraHandler cameraHandler, int requestCode) {
@@ -133,13 +157,6 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
-    public PickerConfig getConfig() {
-        if (mConfig == null && getIntent().hasExtra(PickerConst.EXTRA_CONFIG)) {
-            mConfig = getIntent().getParcelableExtra(PickerConst.EXTRA_CONFIG);
-        }
-        return mConfig;
-    }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
@@ -183,7 +200,7 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
     }
 
     public void startFiles(Dir dir) {
-        new FilesActivity.Builder(this, getConfig(), dir)
+        new FilesActivity.Builder(this, dir)
                 .start();
     }
 
@@ -195,10 +212,35 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
 
     public final void submitResult(List<MediaFile> files) {
         Intent intent = new Intent();
-        intent.putParcelableArrayListExtra(PickerConst.EXTRA_RESULT_FILES, new ArrayList<>(files));
+
+        final File result = new File(getCacheDir(), PickerConst.RESULT_FILE_NAME);
+
+        try (FileOutputStream fos = new FileOutputStream(result)) {
+            final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+            final String json = gson.toJson(files);
+            fos.write(json.getBytes());
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        intent.setData(Uri.fromFile(result));
+
+        deleteConfig();
 
         setResult(RESULT_OK, intent);
         finish();
+    }
+
+    @SuppressWarnings("UnusedReturnValue")
+    private boolean deleteConfig() {
+        final File in = new File(getCacheDir(), DirsActivity.CONFIG_FILE_NAME);
+        if (in.exists() && in.canWrite()) {
+            return in.delete();
+        }
+
+        return false;
     }
 
     @NeedsPermission({Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE})

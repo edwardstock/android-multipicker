@@ -24,7 +24,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.Dir;
@@ -53,7 +52,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import timber.log.Timber;
 
-import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_CONFIG;
 import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_DIR;
 
 /**
@@ -75,7 +73,6 @@ public class FilesActivity extends PickerActivity implements FilesView {
     private SelectionTracker<MediaFile> mSelectionTracker;
     private boolean mLastSelectionState = false;
     private Dir mDir;
-    private PickerConfig mConfig;
     private List<MediaFile> mSelected = new ArrayList<>(10);
     private MediaFile mLastPreview = null;
     private Parcelable mListState;
@@ -99,7 +96,7 @@ public class FilesActivity extends PickerActivity implements FilesView {
         presenter.onRestoreSavedState(savedInstanceState);
 
         mDir = getIntent().getParcelableExtra(EXTRA_DIR);
-        mConfig = getIntent().getParcelableExtra(EXTRA_CONFIG);
+        presenter.setConfig(getConfig());
         presenter.handleExtras(getIntent().getExtras());
         presenter.updateFiles(new MediaFileLoader(this));
 
@@ -126,9 +123,9 @@ public class FilesActivity extends PickerActivity implements FilesView {
 
         int rot = getWindowManager().getDefaultDisplay().getRotation();
         if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_180) {
-            spanCount = (isTablet ? mConfig.getFileColumnsTablet() : mConfig.getFileColumns()) + 1;
+            spanCount = (isTablet ? getConfig().getFileColumnsTablet() : getConfig().getFileColumns()) + 1;
         } else {
-            spanCount = isTablet ? mConfig.getFileColumnsTablet() : mConfig.getFileColumns();
+            spanCount = isTablet ? getConfig().getFileColumnsTablet() : getConfig().getFileColumns();
         }
 
 
@@ -173,7 +170,7 @@ public class FilesActivity extends PickerActivity implements FilesView {
                 .withSelectionPredicate(new SelectionTracker.SelectionPredicate<MediaFile>() {
                     @Override
                     public boolean canSetStateForKey(@NonNull MediaFile mediaFile, boolean nextState) {
-                        return mConfig.getLimit() <= 0 || (mSelected.size() != mConfig.getLimit() || mSelected.contains(mediaFile));
+                        return getConfig().getLimit() <= 0 || (mSelected.size() != getConfig().getLimit() || mSelected.contains(mediaFile));
                     }
 
                     @Override
@@ -262,18 +259,9 @@ public class FilesActivity extends PickerActivity implements FilesView {
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if(requestCode ==getConfig().getRequestCode() && resultCode == RESULT_ADD_FILE_TO_SELECTION) {
-            presenter.onActivityResult(requestCode, resultCode, data);
-            return;
-        }
-        super.onActivityResult(requestCode, resultCode, data);
-    }
-
-    @Override
     public void startPreview(MediaFile file, View sharedView) {
         mLastPreview = file;
-        PreviewerActivity.Builder pb = new PreviewerActivity.Builder(this, getConfig(), mDir, file);
+        PreviewerActivity.Builder pb = new PreviewerActivity.Builder(this, mDir, file);
         pb.start(getConfig().getRequestCode());
     }
 
@@ -357,7 +345,7 @@ public class FilesActivity extends PickerActivity implements FilesView {
 
     @Override
     public void selectFile(MediaFile mediaFile) {
-        if(mSelectionTracker != null && mediaFile != null) {
+        if (mSelectionTracker != null && mediaFile != null) {
             mSelectionTracker.select(mediaFile);
         }
     }
@@ -443,7 +431,7 @@ public class FilesActivity extends PickerActivity implements FilesView {
         if (list != null && list.getLayoutManager() != null) {
             list.getLayoutManager().onRestoreInstanceState(mListState);
         }
-        if (mConfig.getLimit() > 0) {
+        if (getConfig().getLimit() > 0) {
             setSubtitle();
         }
     }
@@ -451,6 +439,15 @@ public class FilesActivity extends PickerActivity implements FilesView {
     @Override
     public FilesPresenter getPresenter() {
         return presenter;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (requestCode == getConfig().getRequestCode() && resultCode == RESULT_ADD_FILE_TO_SELECTION) {
+            presenter.onActivityResult(requestCode, resultCode, data);
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -481,18 +478,16 @@ public class FilesActivity extends PickerActivity implements FilesView {
     }
 
     private void setSubtitle() {
-        if (mConfig.getLimit() > 0) {
-            toolbar.setSubtitle(String.format(Locale.getDefault(), "%d / %d", mSelectionTracker.getSelection().size(), mConfig.getLimit()));
+        if (getConfig().getLimit() > 0) {
+            toolbar.setSubtitle(String.format(Locale.getDefault(), "%d / %d", mSelectionTracker.getSelection().size(), getConfig().getLimit()));
         }
     }
 
     static final class Builder extends ActivityBuilder {
-        private final PickerConfig mConfig;
         private final Dir mDir;
 
-        public Builder(@NonNull Activity from, PickerConfig config, Dir dir) {
+        public Builder(@NonNull Activity from, Dir dir) {
             super(from);
-            mConfig = config;
             mDir = dir;
         }
 
@@ -500,7 +495,6 @@ public class FilesActivity extends PickerActivity implements FilesView {
         protected void onBeforeStart(Intent intent) {
             super.onBeforeStart(intent);
             intent.putExtra(EXTRA_DIR, mDir);
-            intent.putExtra(EXTRA_CONFIG, mConfig);
         }
 
         @Override

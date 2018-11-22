@@ -13,11 +13,9 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.ViewConfiguration;
-import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
-import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
 import com.edwardstock.multipicker.data.Dir;
@@ -36,7 +34,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import timber.log.Timber;
 
-import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_CONFIG;
 import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_DIR;
 import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_MEDIA_FILE;
 
@@ -266,18 +263,12 @@ public class PreviewerActivity extends PickerActivity {
         void onItem(PT pt);
     }
 
-    public interface SystemUiVisibilityListener {
-        void onChangeVisibleState(boolean visibleNow);
-    }
-
     static final class Builder extends ActivityBuilder {
         private final Dir mDir;
-        private final PickerConfig mConfig;
         private final MediaFile mFile;
 
-        public Builder(@NonNull Activity from, PickerConfig config, Dir dir, MediaFile file) {
+        public Builder(@NonNull Activity from, Dir dir, MediaFile file) {
             super(from);
-            mConfig = config;
             mDir = dir;
             mFile = file;
         }
@@ -285,7 +276,6 @@ public class PreviewerActivity extends PickerActivity {
         @Override
         protected void onBeforeStart(Intent intent) {
             super.onBeforeStart(intent);
-            intent.putExtra(EXTRA_CONFIG, mConfig);
             intent.putExtra(EXTRA_MEDIA_FILE, mFile);
             intent.putExtra(EXTRA_DIR, mDir);
         }

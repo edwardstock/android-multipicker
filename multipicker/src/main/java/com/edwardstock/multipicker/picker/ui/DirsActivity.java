@@ -15,6 +15,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.edwardstock.multipicker.BuildConfig;
 import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.R;
 import com.edwardstock.multipicker.R2;
@@ -24,12 +25,16 @@ import com.edwardstock.multipicker.internal.MediaFileLoader;
 import com.edwardstock.multipicker.picker.views.DirsPresenter;
 import com.edwardstock.multipicker.picker.views.DirsView;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import permissions.dispatcher.NeedsPermission;
 import permissions.dispatcher.RuntimePermissions;
-
-import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_CONFIG;
+import timber.log.Timber;
 
 /**
  * android-multipicker. 2018
@@ -38,6 +43,7 @@ import static com.edwardstock.multipicker.picker.PickerConst.EXTRA_CONFIG;
 @RuntimePermissions
 public class DirsActivity extends PickerActivity implements DirsView {
 
+    final static String CONFIG_FILE_NAME = BuildConfig.APPLICATION_ID + ".config.cfg";
     DirsPresenter presenter;
     @BindView(R2.id.list) RecyclerView list;
     @BindView(R2.id.mp_selection_title) TextView selectionTitle;
@@ -46,18 +52,17 @@ public class DirsActivity extends PickerActivity implements DirsView {
     @BindView(R2.id.mp_empty_text) TextView emptyText;
     @BindView(R2.id.selection_root) View selectionRoot;
     @BindView(R2.id.progress) ProgressBar progress;
-    private PickerConfig mConfig;
 
     @Override
     public void setAdapter(final RecyclerView.Adapter<?> adapter) {
         boolean isTablet = getResources().getBoolean(R.bool.mp_isTablet);
-        int spanCount = isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns();
+        int spanCount;
 
         int rot = getWindowManager().getDefaultDisplay().getRotation();
         if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_180) {
-            spanCount = (isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns()) + 1;
+            spanCount = (isTablet ? getConfig().getDirColumnsTablet() : getConfig().getDirColumns()) + 1;
         } else {
-            spanCount = isTablet ? mConfig.getDirColumnsTablet() : mConfig.getDirColumns();
+            spanCount = isTablet ? getConfig().getDirColumnsTablet() : getConfig().getDirColumns();
         }
 
 
@@ -70,13 +75,8 @@ public class DirsActivity extends PickerActivity implements DirsView {
 
     @Override
     public void startFiles(Dir dir) {
-        new FilesActivity.Builder(this, getConfig(), dir)
+        new FilesActivity.Builder(this, dir)
                 .start(getConfig().getRequestCode());
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -121,14 +121,19 @@ public class DirsActivity extends PickerActivity implements DirsView {
         presenter.updateFiles(new MediaFileLoader(this));
     }
 
+    @Override
+    public DirsPresenter getPresenter() {
+        return presenter;
+    }
+
     @NeedsPermission({Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE})
     void setLoader() {
         presenter.updateFiles(new MediaFileLoader(this));
     }
 
     @Override
-    public DirsPresenter getPresenter() {
-        return presenter;
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
@@ -143,9 +148,8 @@ public class DirsActivity extends PickerActivity implements DirsView {
         }
         presenter.attachView(this);
         selectionRoot.setVisibility(View.GONE);
-        mConfig = getIntent().getParcelableExtra(EXTRA_CONFIG);
 
-        presenter.handleExtras(getIntent().getExtras());
+        presenter.setConfig(getConfig());
 
         DirsActivityPermissionsDispatcher.setLoaderWithPermissionCheck(this);
     }
@@ -161,7 +165,16 @@ public class DirsActivity extends PickerActivity implements DirsView {
         @Override
         protected void onBeforeStart(Intent intent) {
             super.onBeforeStart(intent);
-            intent.putExtra(EXTRA_CONFIG, mConfig);
+            final File tmp = getActivity().getCacheDir();
+            final File out = new File(tmp, CONFIG_FILE_NAME);
+
+            try (FileOutputStream os = new FileOutputStream(out, false)) {
+                os.write(mConfig.toJson().getBytes());
+            } catch (FileNotFoundException e) {
+                Timber.e(e);
+            } catch (IOException e) {
+                Timber.e(e);
+            }
         }
 
         @Override

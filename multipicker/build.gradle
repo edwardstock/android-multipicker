@@ -76,6 +76,7 @@ dependencies {
     implementation 'com.jsibbold:zoomage:1.2.0'
     implementation 'com.github.chrisbanes:PhotoView:2.1.4'
     implementation 'com.github.bumptech.glide:glide:4.8.0'
+    implementation 'com.google.code.gson:gson:2.8.5'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.8.0'
     testImplementation 'junit:junit:4.12'
 }

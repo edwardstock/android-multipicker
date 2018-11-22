@@ -147,17 +147,32 @@ public class PickerUtils {
     }
 
     public static boolean isImageFormat(String path) {
-        String mimeType = URLConnection.guessContentTypeFromName(path);
-        return mimeType != null && mimeType.startsWith("image");
+        if (path == null) {
+            return false;
+        }
+        try {
+            String mimeType = URLConnection.guessContentTypeFromName(path);
+            return mimeType != null && !mimeType.isEmpty() && mimeType.startsWith("image");
+        } catch (StringIndexOutOfBoundsException e) {
+            Timber.e(e, "Unable to resolve content type for path: %s", path);
+            return false;
+        }
     }
 
     public static boolean isVideoFormat(String path) {
-        String mimeType = URLConnection.guessContentTypeFromName(path);
-        return mimeType != null && mimeType.startsWith("video");
+        if (path == null) {
+            return false;
+        }
+        try {
+            String mimeType = URLConnection.guessContentTypeFromName(path);
+            return mimeType != null && !mimeType.isEmpty() && mimeType.startsWith("video");
+        } catch (StringIndexOutOfBoundsException e) {
+            Timber.e(e, "Unable to resolve content type for path: %s", path);
+            return false;
+        }
     }
 
-    public static boolean isVideoFormat(MediaFile image) {
-        String mimeType = URLConnection.guessContentTypeFromName(image.getPath());
-        return mimeType != null && mimeType.startsWith("video");
+    public static boolean isVideoFormat(MediaFile file) {
+        return isVideoFormat(file.getPath());
     }
 }

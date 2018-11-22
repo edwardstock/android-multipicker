@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.util.ObjectsCompat;
 
 import com.edwardstock.multipicker.internal.PickerUtils;
+import com.google.gson.annotations.Expose;
 
 import java.io.File;
 import java.nio.file.FileSystems;
@@ -32,11 +33,17 @@ public class MediaFile implements Parcelable {
             return new MediaFile[size];
         }
     };
+    @Expose
     private long mId;
+    @Expose
     private String mName;
+    @Expose
     private String mPath;
+    @Expose
     private File mFile;
+    @Expose
     private VideoInfo mVideoInfo;
+    @Expose
     private MediaSize mMediaSize;
 
     public MediaFile(String path) {

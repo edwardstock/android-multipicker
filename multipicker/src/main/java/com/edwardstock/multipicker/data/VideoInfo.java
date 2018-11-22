@@ -3,6 +3,8 @@ package com.edwardstock.multipicker.data;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.gson.annotations.Expose;
+
 import java.util.Locale;
 
 /**
@@ -22,8 +24,11 @@ public final class VideoInfo implements Parcelable {
             return new VideoInfo[size];
         }
     };
+    @Expose
     private MediaSize mSize;
+    @Expose
     private long mDurationMs;
+    @Expose
     private String mPreviewPath;
 
     public VideoInfo(MediaSize size, String durationMs) {

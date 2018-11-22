@@ -3,6 +3,8 @@ package com.edwardstock.multipicker.internal;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.gson.annotations.Expose;
+
 public class PickerSavePath implements Parcelable {
 
     public static final PickerSavePath DEFAULT = new PickerSavePath("Camera", false);
@@ -18,7 +20,9 @@ public class PickerSavePath implements Parcelable {
             return new PickerSavePath[size];
         }
     };
+    @Expose
     private final String mPath;
+    @Expose
     private final boolean mIsFullPath;
 
     public PickerSavePath(String path) {
