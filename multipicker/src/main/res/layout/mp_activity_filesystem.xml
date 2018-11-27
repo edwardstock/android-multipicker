@@ -44,6 +44,8 @@
             android:animateLayoutChanges="false"
             tools:layoutManager="GridLayoutManager"
             tools:listitem="@layout/mp_item_image"
+            android:fadeScrollbars="false"
+            android:scrollbars="vertical"
             tools:spanCount="3"
             />
     </android.support.v4.widget.SwipeRefreshLayout>
