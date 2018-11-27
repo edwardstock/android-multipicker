@@ -57,34 +57,6 @@ public class PickerUtils {
         return imageFile;
     }
 
-    public static File createVideoFile(PickerSavePath savePath) {
-        // External sdcard location
-        final String path = savePath.getPath();
-        File mediaStorageDir = savePath.isFullPath()
-                ? new File(path)
-                : new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), path);
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists()) {
-            if (!mediaStorageDir.mkdirs()) {
-                Timber.d("Oops! Failed create " + path);
-                return null;
-            }
-        }
-
-        // Create a media file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String imageFileName = "VID_" + timeStamp;
-
-        File imageFile = null;
-        try {
-            imageFile = File.createTempFile(imageFileName, ".mp4", mediaStorageDir);
-        } catch (IOException e) {
-            Timber.d("Oops! Failed create " + imageFileName + " file");
-        }
-        return imageFile;
-    }
-
 
     public static File createImageFile(PickerSavePath savePath) {
         // External sdcard location

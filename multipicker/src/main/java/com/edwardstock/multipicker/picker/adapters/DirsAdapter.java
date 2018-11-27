@@ -52,7 +52,7 @@ public class DirsAdapter extends RecyclerView.Adapter<DirsAdapter.DirViewHolder>
                 .into(holder.image);
 
         holder.name.setText(mDirs.get(position).getName());
-        holder.number.setText(String.valueOf(mDirs.get(position).getFiles().size()));
+        holder.number.setText(String.valueOf(mDirs.get(position).getFilesCount()));
 
         holder.itemView.setOnClickListener(v -> {
             if (folderClickListener != null)

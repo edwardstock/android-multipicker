@@ -290,7 +290,7 @@ public class MediaFileLoader {
                             folder = new Dir(bucket);
                             dirMap.put(bucket, folder);
                         }
-                        folder.getFiles().add(mediaFile);
+                        folder.addFile(mediaFile);
                     }
 
                 } while (cursor.moveToPrevious());

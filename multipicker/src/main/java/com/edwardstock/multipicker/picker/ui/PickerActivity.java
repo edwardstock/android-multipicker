@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.util.Pair;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
@@ -43,6 +44,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import butterknife.BindView;
@@ -64,7 +67,7 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
     public @Nullable @BindView(R2.id.container_swipe_refresh) SwipeRefreshLayout swipeRefreshLayout;
     private PickerConfig mConfig;
     private GridSpacingItemDecoration mGridSpacingItemDecoration;
-    private boolean mScannedDirs = false;
+    protected static boolean scannedDirs = false;
 
     public PickerConfig getConfig() {
         if (mConfig == null) {
@@ -122,20 +125,15 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
         rescanFiles(null);
     }
 
-    @Override
-    public void rescanFiles(OnCompleteScan listener) {
-        new Thread(() -> {
-            Timber.d("Scan files...");
-            scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath());
-            scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
-            scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath());
-            }
-            if (listener != null) {
-                new Handler(Looper.getMainLooper()).post(listener::onComplete);
-            }
-        }).start();
+    static <T> List<List<T>> chopped(List<T> list, final int L) {
+        List<List<T>> parts = new ArrayList<>();
+        final int N = list.size();
+        for (int i = 0; i < N; i += L) {
+            parts.add(new ArrayList<>(
+                    list.subList(i, Math.min(N, i + L)))
+            );
+        }
+        return parts;
     }
 
     @Override
@@ -287,22 +285,20 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
     abstract protected PickerPresenter getPresenter();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getPresenter() != null) {
-            getPresenter().attachToLifecycle(this);
-            getPresenter().onRestoreSavedState(savedInstanceState);
-        }
-
-        if (savedInstanceState != null && savedInstanceState.containsKey(STATE_SCANNED_FILES_FIRST_TIME)) {
-            mScannedDirs = savedInstanceState.getBoolean(STATE_SCANNED_FILES_FIRST_TIME);
-        }
-
-        if (!mScannedDirs) {
-            rescanFiles();
-        }
-
-        setResult(RESULT_CANCELED);
+    public void rescanFiles(OnCompleteScan listener) {
+        new Thread(() -> {
+            Timber.d("Scan files...");
+            scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath());
+            scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath());
+            scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                scanFilesIn(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).getAbsolutePath());
+            }
+            if (listener != null) {
+                new Handler(Looper.getMainLooper()).post(listener::onComplete);
+            }
+            scannedDirs = true;
+        }).start();
     }
 
     @Override
@@ -322,10 +318,6 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
         if (getPresenter() != null) {
             getPresenter().onRestoreSavedState(savedInstanceState);
         }
-
-        if (savedInstanceState != null && savedInstanceState.containsKey(STATE_SCANNED_FILES_FIRST_TIME)) {
-            mScannedDirs = savedInstanceState.getBoolean(STATE_SCANNED_FILES_FIRST_TIME);
-        }
     }
 
     @Override
@@ -334,23 +326,39 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
         if (getPresenter() != null) {
             getPresenter().onSaveInstanceState(outState);
         }
-        outState.putBoolean(STATE_SCANNED_FILES_FIRST_TIME, mScannedDirs);
     }
 
-    private void scanFilesIn(String pathName) {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getPresenter() != null) {
+            getPresenter().attachToLifecycle(this);
+            getPresenter().onRestoreSavedState(savedInstanceState);
+        }
+
+        if (!scannedDirs) {
+            rescanFiles();
+        }
+
+        setResult(RESULT_CANCELED);
+    }
+
+    private List<Pair<String, String>> iterateDirs(String pathName) {
         File folderFile = new File(pathName);
         File[] files = folderFile.listFiles();
         if (files != null) {
+            List<Pair<String, String>> out = new ArrayList<>();
             for (File file : files) {
                 // skip hidden files or directories
                 if (file.getName().startsWith(".")) {
+                    file = null;
                     continue;
                 }
 
                 // checking the File is file or directory
                 if (file.isFile()) {
                     String mime = null;
-                    final String p = file.getAbsolutePath();
+                    String p = file.getAbsolutePath();
                     if (PickerUtils.isVideoFormat(p)) {
                         mime = PickerUtils.mimeFrom(p);
                     } else if (PickerUtils.isImageFormat(p)) {
@@ -358,19 +366,44 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
                     }
 
                     if (mime != null) {
-//                        Timber.d("Scan file: %s", file.getAbsolutePath());
-                        MediaScannerConnection.scanFile(getApplicationContext(), new String[]{file.getAbsolutePath()}, new String[]{mime}, new MediaScannerConnection.OnScanCompletedListener() {
-                            @Override
-                            public void onScanCompleted(String path, Uri uri) {
-//                                Timber.d("Scan file: %s (%s) - completed", path, uri.toString());
-                            }
-                        });
+                        out.add(Pair.create(file.getAbsolutePath(), mime));
                     }
+                    p = null;
+                    file = null;
+                    files = null;
+                    folderFile = null;
 
                 } else if (file.isDirectory()) {
-                    scanFilesIn(file.getAbsolutePath());
+                    out.addAll(iterateDirs(file.getAbsolutePath()));
                 }
             }
+            return out;
+        }
+
+        return Collections.emptyList();
+    }
+
+    private void scanFilesIn(String pathName) {
+        List<Pair<String, String>> out = iterateDirs(pathName);
+        List<List<Pair<String, String>>> chunks = chopped(out, 10);
+
+        int pn = 0;
+        for (List<Pair<String, String>> p : chunks) {
+            String[] paths = new String[p.size()];
+            String[] mimes = new String[p.size()];
+
+            int i = 0;
+            for (Pair<String, String> sp : p) {
+                paths[i] = sp.first;
+                mimes[i] = sp.second;
+                i++;
+            }
+
+            MediaScannerConnection.scanFile(getApplicationContext(), paths, mimes, (path, uri) -> {
+                Timber.d("Scanned: %s", path);
+            });
+
+            pn++;
         }
     }
 

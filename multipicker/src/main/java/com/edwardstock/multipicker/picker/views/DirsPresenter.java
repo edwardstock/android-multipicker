@@ -68,10 +68,14 @@ public class DirsPresenter extends PickerPresenter<DirsView> implements MediaFil
     @Override
     protected void onFirstViewAttach() {
         super.onFirstViewAttach();
-
     }
 
     private void onDirClick(Dir dir) {
+        MediaFile firstFile = dir.getFiles().get(0);
+        dir.getFiles().clear();
+        // dont't pass all files to parcel, TransactionTooLarge - guarantee, but don't use Dir.addFile, because files counter will breaks
+        // @TODO make more beautiful solution
+        dir.getFiles().add(firstFile);
         callOnView(v -> v.startFiles(dir));
     }
 }

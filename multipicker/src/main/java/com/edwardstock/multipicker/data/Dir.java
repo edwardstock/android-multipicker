@@ -31,12 +31,8 @@ public final class Dir implements Parcelable {
     private String mName;
     @Expose
     private List<MediaFile> mFiles;
-
-    @NonNull
-    @Override
-    public String toString() {
-        return mName;
-    }
+    @Expose
+    private int mFilesCount = 0;
 
     public Dir(String name) {
         mName = name;
@@ -50,6 +46,13 @@ public final class Dir implements Parcelable {
         } else {
             mFiles = null;
         }
+        mFilesCount = in.readInt();
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return mName;
     }
 
     @Override
@@ -90,5 +93,15 @@ public final class Dir implements Parcelable {
             dest.writeByte((byte) (0x01));
             dest.writeList(mFiles);
         }
+        dest.writeInt(mFilesCount);
+    }
+
+    public int getFilesCount() {
+        return mFilesCount;
+    }
+
+    public void addFile(MediaFile mediaFile) {
+        getFiles().add(mediaFile);
+        mFilesCount++;
     }
 }

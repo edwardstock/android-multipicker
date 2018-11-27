@@ -165,6 +165,7 @@ public class DirsActivity extends PickerActivity implements DirsView {
         @Override
         protected void onBeforeStart(Intent intent) {
             super.onBeforeStart(intent);
+            scannedDirs = false;
             final File tmp = getActivity().getCacheDir();
             final File out = new File(tmp, CONFIG_FILE_NAME);
 
