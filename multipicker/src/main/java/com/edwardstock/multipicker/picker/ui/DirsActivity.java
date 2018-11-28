@@ -3,14 +3,18 @@ package com.edwardstock.multipicker.picker.ui;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Surface;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -33,6 +37,9 @@ import java.io.IOException;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import permissions.dispatcher.NeedsPermission;
+import permissions.dispatcher.OnPermissionDenied;
+import permissions.dispatcher.OnShowRationale;
+import permissions.dispatcher.PermissionRequest;
 import permissions.dispatcher.RuntimePermissions;
 import timber.log.Timber;
 
@@ -52,6 +59,7 @@ public class DirsActivity extends PickerActivity implements DirsView {
     @BindView(R2.id.mp_empty_text) TextView emptyText;
     @BindView(R2.id.selection_root) View selectionRoot;
     @BindView(R2.id.progress) ProgressBar progress;
+    @BindView(R2.id.mp_grant_permission) Button buttonGrantPermissions;
 
     @Override
     public void setAdapter(final RecyclerView.Adapter<?> adapter) {
@@ -81,12 +89,12 @@ public class DirsActivity extends PickerActivity implements DirsView {
 
     @Override
     public void showProgress() {
-        progress.setVisibility(View.VISIBLE);
+        runOnUiThread(() -> progress.setVisibility(View.VISIBLE));
     }
 
     @Override
     public void hideProgress() {
-        progress.setVisibility(View.GONE);
+        runOnUiThread(() -> progress.setVisibility(View.GONE));
     }
 
     @Override
@@ -128,7 +136,36 @@ public class DirsActivity extends PickerActivity implements DirsView {
 
     @NeedsPermission({Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE})
     void setLoader() {
+        buttonGrantPermissions.setVisibility(View.GONE);
         presenter.updateFiles(new MediaFileLoader(this));
+    }
+
+    @OnShowRationale({Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE})
+    void showRationaleForReadWrite(final PermissionRequest request) {
+        new AlertDialog.Builder(this)
+                .setMessage(R.string.mp_permission_storage_rationale)
+                .setPositiveButton(R.string.mp_button_allow, (dialog, button) -> request.proceed())
+                .setNegativeButton(R.string.mp_button_deny, (dialog, button) -> request.cancel())
+                .show();
+    }
+
+    @OnPermissionDenied({Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE})
+    void showDeniedForReadWrite() {
+        buttonGrantPermissions.setVisibility(View.VISIBLE);
+        buttonGrantPermissions.setOnClickListener(v -> {
+            try {
+                Intent intent = new Intent();
+                intent.setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                Uri uri = Uri.fromParts("package", getConfig().getApplicationId(), null);
+                intent.setData(uri);
+                startActivity(intent);
+            } catch (Throwable ignore) {
+                new AlertDialog.Builder(this)
+                        .setMessage(R.string.mp_permission_grant_failed)
+                        .setPositiveButton(R.string.mp_button_allow, (dialog, button) -> dialog.dismiss())
+                        .show();
+            }
+        });
     }
 
     @Override
@@ -165,6 +202,13 @@ public class DirsActivity extends PickerActivity implements DirsView {
         @Override
         protected void onBeforeStart(Intent intent) {
             super.onBeforeStart(intent);
+            if (getActivity() == null) {
+                throw new IllegalStateException("Activity can't be null! Please, sure that you have passed activity or fragment to Builder constructor.");
+            }
+
+            if (mConfig.getApplicationId() == null) {
+                mConfig.applicationId(getActivity().getPackageName());
+            }
             scannedDirs = false;
             final File tmp = getActivity().getCacheDir();
             final File out = new File(tmp, CONFIG_FILE_NAME);
@@ -176,6 +220,7 @@ public class DirsActivity extends PickerActivity implements DirsView {
             } catch (IOException e) {
                 Timber.e(e);
             }
+
         }
 
         @Override

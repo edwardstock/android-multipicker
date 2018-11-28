@@ -68,7 +68,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="@string/no_content"
+        android:text="@string/mp_no_content"
         android:textAlignment="center"
         android:textColor="@color/mp_textColorPrimary"
         android:textStyle="bold"
@@ -77,6 +77,19 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible"
+        />
+
+    <Button
+        android:id="@+id/mp_grant_permission"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/mp_spacing"
+        android:text="@string/mp_button_grant_permissions"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/progress"
         tools:visibility="visible"
         />
 

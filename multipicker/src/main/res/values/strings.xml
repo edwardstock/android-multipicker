@@ -8,6 +8,11 @@
     <string name="mp_error_create_image_file">Не удалось сделать фото</string>
     <string name="mp_done">Готово</string>
     <string name="mp_chooser_title">Выберите фото</string>
-    <string name="no_content">Файлы отсутствуют</string>
+    <string name="mp_no_content">Файлы отсутствуют</string>
     <string name="mp_empty"/>
+    <string name="mp_permission_storage_rationale">Для того чтобы выбрать файл, нам нужно разрешение на чтение хранилища</string>
+    <string name="mp_button_allow">Разрешить</string>
+    <string name="mp_button_deny">Отмена</string>
+    <string name="mp_button_grant_permissions">Предоставить доступ</string>
+    <string name="mp_permission_grant_failed">Для того чтобы предоставить доступ, зайдите в настройки приложения, найдите пункт меню \"Разрешения\".</string>
 </resources>
