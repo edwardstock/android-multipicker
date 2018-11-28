@@ -225,8 +225,6 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
 
         intent.setData(Uri.fromFile(result));
 
-        deleteConfig();
-
         setResult(RESULT_OK, intent);
         finish();
     }
