@@ -213,7 +213,7 @@ public abstract class PickerActivity extends AppCompatActivity implements Picker
 
         final File result = new File(getCacheDir(), PickerConst.RESULT_FILE_NAME);
 
-        try (FileOutputStream fos = new FileOutputStream(result)) {
+        try (FileOutputStream fos = new FileOutputStream(result, false)) {
             final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
             final String json = gson.toJson(files);
             fos.write(json.getBytes());
