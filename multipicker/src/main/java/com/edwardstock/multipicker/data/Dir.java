@@ -2,13 +2,14 @@ package com.edwardstock.multipicker.data;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
-import android.support.v4.util.ObjectsCompat;
 
 import com.google.gson.annotations.Expose;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.core.util.ObjectsCompat;
 
 /**
  * android-multipicker. 2018

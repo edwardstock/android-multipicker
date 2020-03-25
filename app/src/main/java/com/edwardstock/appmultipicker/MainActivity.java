@@ -2,8 +2,6 @@ package com.edwardstock.appmultipicker;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -13,6 +11,8 @@ import com.edwardstock.multipicker.data.MediaFile;
 import java.io.IOException;
 import java.util.List;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity {

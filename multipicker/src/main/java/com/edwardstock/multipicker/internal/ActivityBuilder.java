@@ -4,12 +4,6 @@ import android.app.Activity;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityOptionsCompat;
-import android.support.v4.app.Fragment;
-import android.support.v4.util.Pair;
-import android.support.v4.view.ViewCompat;
 import android.view.View;
 
 import com.annimon.stream.Stream;
@@ -19,6 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import androidx.annotation.CallSuper;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.util.Pair;
+import androidx.core.view.ViewCompat;
+import androidx.fragment.app.Fragment;
 import timber.log.Timber;
 
 import static com.google.common.base.Preconditions.checkNotNull;

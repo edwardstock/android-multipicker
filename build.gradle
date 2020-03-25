@@ -9,8 +9,8 @@ buildscript {
         maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.3.0-rc01'
-        classpath 'com.jakewharton:butterknife-gradle-plugin:9.0.0-SNAPSHOT'
+        classpath 'com.android.tools.build:gradle:3.6.1'
+        classpath 'com.jakewharton:butterknife-gradle-plugin:10.2.1'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
 
         // NOTE: Do not place your application dependencies here; they belong

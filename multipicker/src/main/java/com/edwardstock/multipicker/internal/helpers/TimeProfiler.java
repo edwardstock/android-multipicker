@@ -1,10 +1,9 @@
 package com.edwardstock.multipicker.internal.helpers;
 
-import android.support.annotation.NonNull;
-import android.support.v4.util.SimpleArrayMap;
-
 import com.edwardstock.multipicker.BuildConfig;
 
+import androidx.annotation.NonNull;
+import androidx.collection.SimpleArrayMap;
 import timber.log.Timber;
 
 /**

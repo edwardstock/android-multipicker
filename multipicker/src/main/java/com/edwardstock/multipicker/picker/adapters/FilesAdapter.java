@@ -4,14 +4,6 @@ import android.content.Context;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.drawable.Drawable;
-import android.support.annotation.NonNull;
-import android.support.constraint.ConstraintLayout;
-import android.support.constraint.ConstraintSet;
-import android.support.transition.AutoTransition;
-import android.support.transition.TransitionManager;
-import android.support.transition.TransitionSet;
-import android.support.v4.view.ViewCompat;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,9 +30,17 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
+import androidx.core.view.ViewCompat;
 import androidx.recyclerview.selection.ItemDetailsLookup;
 import androidx.recyclerview.selection.Selection;
 import androidx.recyclerview.selection.SelectionTracker;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.transition.AutoTransition;
+import androidx.transition.TransitionManager;
+import androidx.transition.TransitionSet;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
@@ -96,7 +96,9 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
         final MediaFile file = mItems.get(position);
         final boolean isSelected = mSelectionTracker.isSelected(file);
         boolean isEnableSelection = isSelected || mSelectionTracker.getSelection().size() > 0;
-        ViewCompat.setTransitionName(viewHolder.imageView, ctx.getResources().getString(R.string.mp_transition_image) + String.valueOf(file.getId()));
+        ViewCompat.setTransitionName(viewHolder.imageView,
+                ctx.getResources().getString(R.string.mp_transition_image) +
+                        file.getId());
 
         ColorMatrix matrix = new ColorMatrix();
         matrix.setSaturation(.8F);
@@ -108,7 +110,7 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.ViewHolder> 
                 .load(file.getPath())
                 .listener(new RequestListener<Drawable>() {
                     @Override
-                    public boolean onLoadFailed(@android.support.annotation.Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                    public boolean onLoadFailed(@androidx.annotation.Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                         if (mWaitintForMeasure == null || mOnMeasuredListener == null) {
                             return false;
                         }

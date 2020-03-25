@@ -6,7 +6,6 @@ import android.graphics.Bitmap;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.support.annotation.Nullable;
 
 import com.annimon.stream.Stream;
 import com.edwardstock.multipicker.PickerConfig;
@@ -27,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 

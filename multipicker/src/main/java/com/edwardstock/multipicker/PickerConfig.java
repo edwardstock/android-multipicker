@@ -2,7 +2,6 @@ package com.edwardstock.multipicker;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.RestrictTo;
 
 import com.annimon.stream.Stream;
 import com.edwardstock.multipicker.data.MediaFile;
@@ -14,6 +13,8 @@ import com.google.gson.annotations.Expose;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+
+import androidx.annotation.RestrictTo;
 
 /**
  * android-multipicker. 2018

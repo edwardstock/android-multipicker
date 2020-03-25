@@ -5,8 +5,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
-import android.support.v4.util.ObjectsCompat;
 
 import com.edwardstock.multipicker.internal.PickerUtils;
 import com.google.gson.annotations.Expose;
@@ -15,6 +13,9 @@ import java.io.File;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.Locale;
+
+import androidx.annotation.NonNull;
+import androidx.core.util.ObjectsCompat;
 
 /**
  * android-multipicker. 2018

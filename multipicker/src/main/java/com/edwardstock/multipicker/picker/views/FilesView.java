@@ -1,7 +1,5 @@
 package com.edwardstock.multipicker.picker.views;
 
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.widget.RecyclerView;
 import android.view.View;
 
 import com.edwardstock.multipicker.data.MediaFile;
@@ -9,6 +7,8 @@ import com.edwardstock.multipicker.data.MediaFile;
 import java.io.File;
 
 import androidx.recyclerview.selection.SelectionTracker;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 /**
  * android-multipicker. 2018

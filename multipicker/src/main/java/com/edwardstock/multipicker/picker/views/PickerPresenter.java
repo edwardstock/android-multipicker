@@ -6,13 +6,13 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.CallSuper;
 
 import com.edwardstock.multipicker.PickerConfig;
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.internal.CameraHandler;
 import com.edwardstock.multipicker.internal.MediaFileLoader;
 
+import androidx.annotation.CallSuper;
 import timber.log.Timber;
 
 import static android.app.Activity.RESULT_CANCELED;

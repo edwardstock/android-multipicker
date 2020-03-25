@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -10,7 +10,7 @@
     tools:context=".picker.ui.FilesActivity"
     >
 
-    <android.support.v7.widget.Toolbar
+    <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -27,7 +27,7 @@
         app:titleTextColor="?android:attr/textColorSecondary"
         />
 
-    <android.support.v4.widget.SwipeRefreshLayout
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/container_swipe_refresh"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -37,7 +37,7 @@
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         >
 
-        <android.support.v7.widget.RecyclerView
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -48,7 +48,7 @@
             android:scrollbars="vertical"
             tools:spanCount="3"
             />
-    </android.support.v4.widget.SwipeRefreshLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <com.edwardstock.multipicker.internal.widgets.MpColoredProgressBar
         android:id="@+id/progress"
@@ -110,7 +110,7 @@
             android:background="@drawable/mp_selection_view_shadow"
             />
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/selection_root_sub"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -184,7 +184,7 @@
                 app:layout_constraintTop_toTopOf="parent"
                 tools:alpha="1"
                 />
-        </android.support.constraint.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
 
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

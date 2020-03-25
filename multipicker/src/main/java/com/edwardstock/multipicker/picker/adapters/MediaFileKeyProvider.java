@@ -1,12 +1,11 @@
 package com.edwardstock.multipicker.picker.adapters;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-
 import com.edwardstock.multipicker.data.MediaFile;
 
 import java.util.List;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.selection.ItemKeyProvider;
 
 /**

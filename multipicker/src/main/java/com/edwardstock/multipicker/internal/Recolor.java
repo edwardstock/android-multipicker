@@ -22,12 +22,13 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.support.transition.Transition;
-import android.support.transition.TransitionValues;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+
+import androidx.transition.Transition;
+import androidx.transition.TransitionValues;
 
 /**
  * This transition tracks changes during scene changes to the

@@ -3,7 +3,6 @@ package com.edwardstock.multipicker;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
-import android.support.v4.app.Fragment;
 
 import com.edwardstock.multipicker.data.MediaFile;
 import com.edwardstock.multipicker.picker.ui.DirsActivity;
@@ -18,6 +17,7 @@ import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.List;
 
+import androidx.fragment.app.Fragment;
 import timber.log.Timber;
 
 import static com.google.common.base.Preconditions.checkNotNull;

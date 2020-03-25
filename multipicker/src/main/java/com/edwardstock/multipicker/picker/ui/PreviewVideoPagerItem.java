@@ -2,8 +2,6 @@ package com.edwardstock.multipicker.picker.ui;
 
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +32,8 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory;
 import com.google.android.exoplayer2.video.VideoListener;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import timber.log.Timber;
