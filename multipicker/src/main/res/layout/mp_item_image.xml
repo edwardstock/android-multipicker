@@ -24,7 +24,7 @@
         tools:alpha=".5"
         />
 
-    <android.support.constraint.ConstraintLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/mp_image_view_root"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -83,9 +83,8 @@
             app:layout_constraintStart_toEndOf="@id/mp_file_type_icon"
             app:layout_constraintTop_toTopOf="@id/mp_file_type_icon"
             tools:text="00:24:00"
-            tools:visibility="visible"
-            />
-    </android.support.constraint.ConstraintLayout>
+            tools:visibility="visible" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <View
         android:id="@+id/image_selection"

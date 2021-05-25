@@ -1,15 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.edwardstock.multipicker"
-    >
+    package="com.edwardstock.multipicker">
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application>
         <activity
             android:name=".picker.ui.PickerActivity"
-            android:theme="@style/mp_AppTheme"/>
+            android:theme="@style/mp_AppTheme" />
 
         <provider
             android:name=".internal.MultiPickerFileProvider"
@@ -18,7 +19,7 @@
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/multi_picker_provider_paths"/>
+                android:resource="@xml/mp_provider_paths" />
         </provider>
     </application>
 </manifest>

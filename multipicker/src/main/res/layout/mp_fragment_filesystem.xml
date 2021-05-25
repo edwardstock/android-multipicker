@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/fs_root"
     tools:context=".picker.ui.PickerActivity"
-    android:background="@color/mp_colorBackground"
-    >
+    android:background="@color/mp_colorBackground">
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -42,7 +40,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="@string/no_content"
+        android:text="@string/mp_no_content"
         android:textAlignment="center"
         android:textColor="@color/mp_textColorPrimary"
         android:textStyle="bold"
@@ -71,13 +69,12 @@
             android:background="@drawable/mp_selection_view_shadow"
             />
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/selection_root_sub"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/mp_colorBackground"
-            android:minHeight="56dp"
-            >
+            android:minHeight="56dp">
 
             <ImageView
                 android:id="@+id/mp_selection_action_clear"
@@ -128,9 +125,8 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@id/mp_selection_title"
                 app:layout_constraintTop_toTopOf="parent"
-                tools:alpha="1"
-                />
-        </android.support.constraint.ConstraintLayout>
+                tools:alpha="1" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
 
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

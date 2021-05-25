@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-path
+        name="external_files"
+        path="." />
+    <external-path
+        name="Pictures"
+        path="." />
+    <external-path
+        name="Camera"
+        path="." />
+    <external-path
+        name=".thumbnails"
+        path="." />
+</paths>

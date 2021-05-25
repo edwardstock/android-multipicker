@@ -1,12 +1,49 @@
 <resources>
     <string name="mp_gif">GIF</string>
-    <string name="mp_video">Видео</string>
+    <string name="mp_video">Video</string>
     <string name="mp_content_desc_image">Image</string>
-    <string name="mp_transition_image">mp_preview_transition</string>
-    <string name="mp_camera">Фото</string>
-    <string name="mp_error_create_video_file">Не удалось записать видео</string>
-    <string name="mp_error_create_image_file">Не удалось сделать фото</string>
-    <string name="mp_done">Готово</string>
-    <string name="mp_chooser_title">Выберите фото</string>
-    <string name="no_content">Файлы отсутствуют</string>
+    <string name="mp_transition_image" translatable="false">mp_preview_transition</string>
+    <string name="mp_camera">Take Photo</string>
+    <string name="mp_error_create_video_file">Unable to take a video</string>
+    <string name="mp_error_create_image_file">Unable to take a picture</string>
+    <string name="mp_done">Done</string>
+    <string name="mp_chooser_title">Choose Photo</string>
+    <string name="mp_no_content">No files yet</string>
+    <string name="mp_choose_file">Choose file</string>
+
+    <plurals name="mp_choosed_n_photos">
+        <item quantity="zero">Selected %1$d photos</item>
+        <item quantity="one">Selected %1$d photo</item>
+        <item quantity="two">Selected %1$d photos</item>
+        <item quantity="few">Selected %1$d photos</item>
+        <item quantity="many">Selected %1$d photos</item>
+        <item quantity="other">Selected %1$d photos</item>
+    </plurals>
+
+    <plurals name="mp_choosed_n_videos">
+        <item quantity="zero">Selected %1$d videos</item>
+        <item quantity="one">Selected %1$d video</item>
+        <item quantity="two">Selected %1$d videos</item>
+        <item quantity="few">Selected %1$d videos</item>
+        <item quantity="many">Selected %1$d videos</item>
+        <item quantity="other">Selected %1$d videos</item>
+    </plurals>
+
+    <plurals name="mp_choosed_n_photos_and_videos_prefix">
+        <item quantity="zero">Selected %1$d photos and</item>
+        <item quantity="one">Selected %1$d photo and</item>
+        <item quantity="two">Selected %1$d photos and</item>
+        <item quantity="few">Selected %1$d photos and</item>
+        <item quantity="many">Selected %1$d photos and</item>
+        <item quantity="other">Selected %1$d photos and</item>
+    </plurals>
+
+    <plurals name="mp_choosed_n_photos_and_videos_suffix">
+        <item quantity="zero"> %1$d videos</item>
+        <item quantity="one"> %1$d video</item>
+        <item quantity="two"> %1$d videos</item>
+        <item quantity="few"> %1$d videos</item>
+        <item quantity="many"> %1$d videos</item>
+        <item quantity="other"> %1$d videos</item>
+    </plurals>
 </resources>

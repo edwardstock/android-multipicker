@@ -1,0 +1,40 @@
+<resources>
+    <string name="mp_gif">GIF</string>
+    <string name="mp_video">Видео</string>
+    <string name="mp_content_desc_image">Изображение</string>
+    <string name="mp_camera">Фото</string>
+    <string name="mp_error_create_video_file">Не удалось записать видео</string>
+    <string name="mp_error_create_image_file">Не удалось сделать фото</string>
+    <string name="mp_done">Готово</string>
+    <string name="mp_chooser_title">Выберите фото</string>
+    <string name="mp_no_content">Файлы отсутствуют</string>
+    <string name="mp_choose_file">Выберите файл</string>
+
+    <plurals name="mp_choosed_n_photos">
+        <item quantity="one">Выбрано %1$d фото</item>
+        <item quantity="few">Выбрано %1$d фото</item>
+        <item quantity="many">Выбрано %1$d фото</item>
+        <item quantity="other">Выбрано %1$d фото</item>
+    </plurals>
+
+    <plurals name="mp_choosed_n_videos">
+        <item quantity="one">Выбрано %1$d видео</item>
+        <item quantity="few">Выбрано %1$d видео</item>
+        <item quantity="many">Выбрано %1$d видео</item>
+        <item quantity="other">Выбрано %1$d видео</item>
+    </plurals>
+
+    <plurals name="mp_choosed_n_photos_and_videos_prefix">
+        <item quantity="one">Выбрано %1$d фото и </item>
+        <item quantity="few">Выбрано %1$d фото и </item>
+        <item quantity="many">Выбрано %1$d фото и </item>
+        <item quantity="other">Выбрано %1$d фото и </item>
+    </plurals>
+
+    <plurals name="mp_choosed_n_photos_and_videos_suffix">
+        <item quantity="one">%1$d видео</item>
+        <item quantity="few">%1$d видео</item>
+        <item quantity="many">%1$d видео</item>
+        <item quantity="other">%1$d видео</item>
+    </plurals>
+</resources>

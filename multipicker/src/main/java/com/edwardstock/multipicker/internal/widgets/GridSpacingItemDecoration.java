@@ -1,17 +1,18 @@
 package com.edwardstock.multipicker.internal.widgets;
 
 import android.graphics.Rect;
-import android.support.v7.widget.RecyclerView;
 import android.view.View;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * Created by hoanglam on 9/5/16.
  */
 public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
-    private int spanCount;
-    private int spacing;
-    private boolean includeEdge;
+    private final int spanCount;
+    private final int spacing;
+    private final boolean includeEdge;
 
     public GridSpacingItemDecoration(int spanCount, int spacing, boolean includeEdge) {
         this.spanCount = spanCount;
