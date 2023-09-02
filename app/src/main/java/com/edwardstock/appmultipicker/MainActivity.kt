@@ -37,7 +37,12 @@ class MainActivity : AppCompatActivity() {
         b.files.text = null
         for (item in files) {
             b.files.append(item.toString())
+//            MultiPickerFileProvider.grantFilePermissions(this, item.uri!!, true)
             b.files.append("\n")
+            b.files.append("Size? ${item.uri.length()}\n")
+            b.files.append("CanRead? ${item.uri.canRead()}\n")
+            b.files.append("CanWrite? ${item.uri.canWrite()}\n\n")
+
         }
     }
 }

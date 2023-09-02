@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+    <external-cache-path
+        name="shared_files"
+        path="cached_shared_files" />
     <external-path
         name="external_files"
         path="." />

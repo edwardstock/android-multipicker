@@ -5,31 +5,38 @@ import android.os.Build
 import android.os.Parcelable
 import androidx.annotation.RequiresApi
 import com.edwardstock.multipicker.internal.PickerUtils
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.io.File
 import java.nio.file.FileSystems
 import java.nio.file.Path
-import java.util.*
+import java.util.Locale
 
 /**
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
+ *
+ * @property id MediaStore database ID
+ * @property name File name with extension
+ * @property path Absoulte file path
+ * @property uri Content `Uri`
+ * @property videoInfo Detailed info about video
+ * @property mediaSize Media file witdth and height
  */
 @Parcelize
-class MediaFile(
-        var id: Long = 0,
-        var name: String? = null,
-        // Android API 29+ restricts to direct access to files with absolute path, so use `uri` instead
-        var path: String? = null,
+data class MediaFile(
+        var id: Long,
+        var name: String,
+        @Deprecated("Use Uri and MediaStore API instead", ReplaceWith("uri"))
+        var path: String,
+        var uri: Uri,
         var videoInfo: VideoInfo? = null,
         var mediaSize: MediaSize? = null,
-        // in android 29+ use Uri instead of absolute file path as it's not readable without special permission
-        var uri: Uri? = null
 
-) : Parcelable {
+        ) : Parcelable {
 
     override fun toString(): String {
-        return String.format(Locale.getDefault(), "%s{id=%d, name=%s, uri=%s, path=%s}", javaClass.simpleName, id, name, uri, path)
+        return String.format(Locale.getDefault(), "%s{id=%d, name=%s, uri=%s, path=%s}", javaClass.simpleName, id, name, uri, uri)
     }
 
     val isVideo: Boolean
@@ -37,46 +44,40 @@ class MediaFile(
 
     val size: Long
         get() {
-            if (path == null) return 0
-            return File(path!!).length()
+            return File(uri).length()
         }
 
     @Deprecated(message = "Use size instead", ReplaceWith("size"))
+    @IgnoredOnParcel
     val length: Long = size
 
-    val file: File?
+    @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
+    val file: File
         get() {
-            if (path == null) {
-                return null
-            }
-            return File(path!!)
+            return File(uri)
         }
 
+    @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
     val pathFS: Path?
         @RequiresApi(Build.VERSION_CODES.O)
         get() {
-            if (path == null) return null
-            return FileSystems.getDefault().getPath(path)
+            return FileSystems.getDefault().getPath(uri)
         }
 
+    @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
     val uriFile: Uri?
         get() {
-            if (file == null) {
-                return null
-            }
-            return Uri.fromFile(file)
+            return Uri.fromFile(uri)
         }
 
+    @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
     val exists: Boolean
         get() {
-            if (file == null) return false
-            return file!!.exists()
+            return uri.exists()
         }
 
+    @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
     fun delete(): Boolean {
-        if (file != null) {
-            return file!!.delete()
-        }
-        return false
+        return uri.delete()
     }
 }

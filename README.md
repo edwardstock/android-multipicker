@@ -74,7 +74,7 @@ allprojects {
 ```groovy
 dependencies {
 
-    implementation "com.edwardstock.android:multipicker:2.0.0"
+    implementation "com.edwardstock.android:multipicker:3.1.0"
 
 }
 ```

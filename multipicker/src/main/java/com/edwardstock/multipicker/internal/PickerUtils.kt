@@ -2,8 +2,6 @@ package com.edwardstock.multipicker.internal
 
 import android.content.ContentValues
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
@@ -11,10 +9,16 @@ import android.os.Environment
 import android.provider.MediaStore
 import com.edwardstock.multipicker.data.MediaFile
 import timber.log.Timber
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileNotFoundException
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.URLConnection
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 object PickerUtils {
 
@@ -30,12 +34,12 @@ object PickerUtils {
             }
         }
 
-        if (file.path == null) {
+        if (file.uri == null) {
             Timber.e("MediaFile %s does not have a path", file.toString())
         }
 
         // Create a media file name
-        var srcName = File(file.path!!).name
+        var srcName = File(file.uri).name
         srcName = srcName.substring(0, srcName.lastIndexOf('.'))
         val imageFileName = "thumb_$srcName"
         var imageFile: File? = null
@@ -118,33 +122,14 @@ object PickerUtils {
         } else path
     }
 
-    fun grantAppPermission(context: Context, intent: Intent?, fileUri: Uri?) {
-        val resolvedIntentActivities = context.packageManager
-                .queryIntentActivities(intent!!, PackageManager.MATCH_DEFAULT_ONLY)
-        for (resolvedIntentInfo in resolvedIntentActivities) {
-            val packageName = resolvedIntentInfo.activityInfo.packageName
-            context.grantUriPermission(packageName, fileUri,
-                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-    }
-
-    fun revokeAppPermission(context: Context, fileUri: Uri?) {
-        context.revokeUriPermission(fileUri,
-                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-
-    fun isGifFormat(image: MediaFile): Boolean {
-        val extension = image.path!!.substring(image.path!!.lastIndexOf(".") + 1, image.path!!.length)
-        return extension.equals("gif", ignoreCase = true)
-    }
-
     fun isVideoFormat(path: String?): Boolean {
+        if (path == null) return false
         val mimeType = URLConnection.guessContentTypeFromName(path)
         return mimeType != null && mimeType.startsWith("video")
     }
 
     fun isVideoFormat(image: MediaFile): Boolean {
-        val mimeType = URLConnection.guessContentTypeFromName(image.path)
+        val mimeType = URLConnection.guessContentTypeFromName(image.uri)
         return mimeType != null && mimeType.startsWith("video")
     }
 
@@ -168,7 +153,7 @@ object PickerUtils {
 
     fun writeCapturedMedia(context: Context, mediaFile: MediaFile) {
         val resolver = context.applicationContext.contentResolver
-        val sourceFile = File(mediaFile.path!!)
+        val sourceFile = File(mediaFile.uri)
 
         val targetLibrary = if (!mediaFile.isVideo) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

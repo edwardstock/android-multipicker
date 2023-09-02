@@ -18,7 +18,6 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
-import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -51,38 +50,27 @@ class MediaFileLoader(private val ctx: Context) {
             MediaStore.Video.Media.DURATION)
 
 
-    private var mExecutorService: ExecutorService? = null
-    private val executorLock = Any()
+    private val executorService: ExecutorService by lazy {
+        Executors.newSingleThreadExecutor()
+    }
 
     fun loadDeviceImages(config: PickerConfig, listener: OnLoadListener) {
         executorService.execute(ImageLoadRunnable(config, listener))
     }
 
     fun abortLoadImages() {
-        synchronized(executorLock) {
-            if (mExecutorService != null) {
-                mExecutorService!!.shutdown()
-                mExecutorService = null
-            }
-        }
+        executorService.shutdown()
     }
-
-    private val executorService: ExecutorService
-        get() {
-            synchronized(executorLock) {
-                if (mExecutorService == null) {
-                    mExecutorService = Executors.newSingleThreadExecutor()
-                }
-            }
-            return mExecutorService!!
-        }
 
     private fun createVideoThumbnail(filePath: String): Bitmap? {
         val mmr = MediaMetadataRetriever()
-        mmr.setDataSource(filePath)
         //api time unit is microseconds
         return try {
+            mmr.setDataSource(filePath)
             mmr.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+        } catch (e: Throwable) {
+            Timber.e(e, "Failed to create video thumbnail")
+            null
         } finally {
             mmr.release()
         }
@@ -95,6 +83,10 @@ class MediaFileLoader(private val ctx: Context) {
 
     private inner class ImageLoadRunnable(val config: PickerConfig, val imageLoadListener: OnLoadListener) : Runnable {
         private val root = "external"
+
+        private fun isOsGteQ(): Boolean {
+            return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+        }
 
         override fun run() {
             val cursor: Cursor?
@@ -143,28 +135,28 @@ class MediaFileLoader(private val ctx: Context) {
             var cntVideos = 0
             if (cursor.moveToLast()) {
                 do {
-                    val id = cursor.getLong(cursor.getColumnIndex(projection[0]))
-                    val name = cursor.getString(cursor.getColumnIndex(projection[1]))
-                    val path = cursor.getString(cursor.getColumnIndex(projection[2]))
-                    val bucket = cursor.getString(cursor.getColumnIndex(projection[3]))
+                    val id = cursor.getLong(cursor.getColumnIndexOrThrow(projection[0]))
+                    val name = cursor.getString(cursor.getColumnIndexOrThrow(projection[1]))
+                    val path = cursor.getString(cursor.getColumnIndexOrThrow(projection[2]))
+                    val bucket = cursor.getString(cursor.getColumnIndexOrThrow(projection[3]))
                     var videoWidth: String? = null
                     var videoHeight: String? = null
                     var videoDuration: String? = null
                     var imageWidth: String? = null
                     var imageHeight: String? = null
                     if (config.isShowPhotos && config.isShowVideos) {
-                        videoWidth = cursor.getString(cursor.getColumnIndex(projection[4]))
-                        videoHeight = cursor.getString(cursor.getColumnIndex(projection[5]))
-                        videoDuration = cursor.getString(cursor.getColumnIndex(projection[6]))
-                        imageWidth = cursor.getString(cursor.getColumnIndex(projection[7]))
-                        imageHeight = cursor.getString(cursor.getColumnIndex(projection[8]))
+                        videoWidth = cursor.getString(cursor.getColumnIndexOrThrow(projection[4]))
+                        videoHeight = cursor.getString(cursor.getColumnIndexOrThrow(projection[5]))
+                        videoDuration = cursor.getString(cursor.getColumnIndexOrThrow(projection[6]))
+                        imageWidth = cursor.getString(cursor.getColumnIndexOrThrow(projection[7]))
+                        imageHeight = cursor.getString(cursor.getColumnIndexOrThrow(projection[8]))
                     } else if (!config.isShowPhotos && config.isShowVideos) {
-                        videoWidth = cursor.getString(cursor.getColumnIndex(projection[4]))
-                        videoHeight = cursor.getString(cursor.getColumnIndex(projection[5]))
-                        videoDuration = cursor.getString(cursor.getColumnIndex(projection[6]))
+                        videoWidth = cursor.getString(cursor.getColumnIndexOrThrow(projection[4]))
+                        videoHeight = cursor.getString(cursor.getColumnIndexOrThrow(projection[5]))
+                        videoDuration = cursor.getString(cursor.getColumnIndexOrThrow(projection[6]))
                     } else {
-                        imageWidth = cursor.getString(cursor.getColumnIndex(projection[4]))
-                        imageHeight = cursor.getString(cursor.getColumnIndex(projection[5]))
+                        imageWidth = cursor.getString(cursor.getColumnIndexOrThrow(projection[4]))
+                        imageHeight = cursor.getString(cursor.getColumnIndexOrThrow(projection[5]))
                     }
                     val file = makeSafeFile(path) ?: continue
                     if (config.excludedFiles.contains(file.absolutePath)) {
@@ -178,21 +170,25 @@ class MediaFileLoader(private val ctx: Context) {
                                     MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
                                     id
                             )
-                            MediaFile(id, name, path, videoInfo = VideoInfo(MediaSize(videoWidth, videoHeight), videoDuration), uri = contentUri)
+                            MediaFile(id, name, path, contentUri, videoInfo = VideoInfo(MediaSize(videoWidth, videoHeight), videoDuration))
                         } else {
                             val contentUri: Uri = ContentUris.withAppendedId(
                                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
                                     id
                             )
-                            MediaFile(id, name, path, mediaSize = MediaSize(imageWidth, imageHeight), uri = contentUri)
+                            MediaFile(id, name, path, contentUri, mediaSize = MediaSize(imageWidth, imageHeight))
                         }
                         files += mediaFile
                         var folder: Dir? = dirMap[bucket]
                         if (folder == null) {
-                            folder = Dir(bucket)
-                            dirMap[bucket] = folder
+                            if (bucket != null) {
+                                folder = Dir(bucket)
+                                dirMap[bucket] = folder
+                            }
                         }
-                        folder.files += mediaFile
+                        folder?.let {
+                            it.files += mediaFile
+                        }
                     }
                 } while (cursor.moveToPrevious())
             }
@@ -202,7 +198,7 @@ class MediaFileLoader(private val ctx: Context) {
             }
 
             /* Convert HashMap to ArrayList if not null */
-            val dirs: List<Dir> = ArrayList<Dir>(dirMap.values)
+            val dirs: List<Dir> = ArrayList(dirMap.values)
             imageLoadListener.onFilesLoadedSuccess(files, dirs)
         }
     }
@@ -212,21 +208,18 @@ class MediaFileLoader(private val ctx: Context) {
 
         override fun run() {
             for (item in files) {
-                if (item.path == null || item.uri == null) {
-                    continue
-                }
                 val thumbFile = PickerUtils.createVideoThumbFile(ctx, item) ?: return
 
                 var bmp: Bitmap? = null
                 try {
                     bmp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        ctx.contentResolver.loadThumbnail(item.uri!!, android.util.Size(640, 640), null)
+                        ctx.contentResolver.loadThumbnail(item.uri, android.util.Size(640, 640), null)
                     } else {
-                        createVideoThumbnail(item.path!!) ?: continue
+                        createVideoThumbnail(item.uri) ?: continue
                     }
 
                     FileOutputStream(thumbFile).use { o ->
-                        Timber.d("Write thumbnail for video %s: %s", item.path, thumbFile.absolutePath)
+                        Timber.d("Write thumbnail for video %s: %s", item.uri, thumbFile.absolutePath)
                         bmp.compress(Bitmap.CompressFormat.JPEG, 100, o)
                     }
                 } catch (e: FileNotFoundException) {

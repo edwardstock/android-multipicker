@@ -1,15 +1,17 @@
 package com.edwardstock.multipicker.picker.ui
 
 import android.Manifest
-import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Surface
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat.checkSelfPermission
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.edwardstock.multipicker.PickerConfig
 import com.edwardstock.multipicker.R
 import com.edwardstock.multipicker.data.Dir
@@ -17,46 +19,42 @@ import com.edwardstock.multipicker.databinding.MpFragmentFilesystemBinding
 import com.edwardstock.multipicker.internal.MediaFileLoader
 import com.edwardstock.multipicker.internal.helpers.DisplayHelper
 import com.edwardstock.multipicker.picker.PickerConst
-import com.edwardstock.multipicker.picker.views.BaseFsPresenter
-import com.edwardstock.multipicker.picker.views.DirsPresenter
+import com.edwardstock.multipicker.picker.adapters.DirsAdapter
+import com.edwardstock.multipicker.picker.getParcelableCompat
+import com.edwardstock.multipicker.picker.views.BaseFsViewModel
 import com.edwardstock.multipicker.picker.views.DirsView
-import permissions.dispatcher.NeedsPermission
-import permissions.dispatcher.RuntimePermissions
+import com.edwardstock.multipicker.picker.views.DirsViewModel
+import kotlinx.coroutines.flow.onEach
+import timber.log.Timber
 
 /**
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
-@RuntimePermissions
 class DirsFragment : PickerFileSystemFragment(), DirsView {
-    lateinit var presenter: DirsPresenter
-    private lateinit var mConfig: PickerConfig
+    private lateinit var config: PickerConfig
     private lateinit var b: MpFragmentFilesystemBinding
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        presenter = DirsPresenter()
-        presenter.attachToLifecycle(this)
-        presenter.attachView(this)
-    }
+    private val viewModel: DirsViewModel by viewModels()
+    private val adapter: DirsAdapter = DirsAdapter { dir: Dir -> startFiles(dir) }
 
-    override fun setAdapter(adapter: RecyclerView.Adapter<*>) {
-        val isTablet = resources.getBoolean(R.bool.mp_isTablet)
-        var spanCount = if (isTablet) mConfig.dirColumnsTablet else mConfig.dirColumns
-        if (activity != null) {
-            val rot = DisplayHelper.getRotation(requireActivity())
-
-            spanCount = if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_180) {
-                (if (isTablet) mConfig.dirColumnsTablet else mConfig.dirColumns) + 1
-            } else {
-                if (isTablet) mConfig.dirColumnsTablet else mConfig.dirColumns
-            }
+    private val launchPermissionRequest = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        val granted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            // for API >= 29 we just need at least READ_EXTERNAL_STORAGE
+            permissions.entries.any { it.key == Manifest.permission.READ_EXTERNAL_STORAGE && it.value }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // we don't need extra permissions to just take own pictures and read them
+            true
+        } else {
+            // for API < 29 we need all permissions
+            permissions.entries.all { it.value }
         }
-        val layoutManager = GridLayoutManager(activity, spanCount)
-        setGridSpacingItemDecoration(b.list, spanCount)
-        b.list.layoutManager = layoutManager
-        b.list.setHasFixedSize(true)
-        b.list.adapter = adapter
+        if (granted) {
+            viewModel.updateFiles(MediaFileLoader(requireContext()))
+        } else {
+            b.mpEmptyText.text = getString(R.string.mp_error_permission_denied)
+            viewModel.onPermissionDenied()
+        }
     }
 
     override fun startFiles(dir: Dir) {
@@ -75,49 +73,97 @@ class DirsFragment : PickerFileSystemFragment(), DirsView {
         b.mpEmptyText.visibility = if (show) View.VISIBLE else View.GONE
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        onRequestPermissionsResult(requestCode, grantResults)
-    }
-
     override fun onError(error: CharSequence?) {
         safeActivity { act: PickerActivity -> act.onError(error) }
     }
 
     override fun onError(t: Throwable?) {
-        safeActivity { act: PickerActivity -> act.onError(t) }
-    }
-
-    override fun startUpdateFiles() {
-        presenter.updateFiles(MediaFileLoader(requireActivity()))
+        t?.let {
+            safeActivity { act: PickerActivity -> act.onError(t) }
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         b = MpFragmentFilesystemBinding.inflate(inflater, container, false)
         b.selectionRoot.visibility = View.GONE
-        mConfig = requireArguments().getParcelable(PickerConst.EXTRA_CONFIG)!!
-        presenter.handleExtras(requireArguments())
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            setLoaderWithPermissionCheck()
-        } else {
-            setLoaderPreQWithPermissionCheck()
-        }
+        config = requireArguments().getParcelableCompat(PickerConst.EXTRA_CONFIG)!!
+        viewModel.handleExtras(requireArguments())
+
+        Timber.d("DirsFragment onCreateView: $config")
 
         return b.root
     }
 
-    override fun getPresenter(): BaseFsPresenter<*> {
-        return presenter
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val isTablet = resources.getBoolean(R.bool.mp_isTablet)
+        var spanCount = if (isTablet) config.dirColumnsTablet else config.dirColumns
+        if (activity != null) {
+            val rot = DisplayHelper.getRotation(requireActivity())
+
+            spanCount = if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_180) {
+                (if (isTablet) config.dirColumnsTablet else config.dirColumns) + 1
+            } else {
+                if (isTablet) config.dirColumnsTablet else config.dirColumns
+            }
+        }
+        val layoutManager = GridLayoutManager(activity, spanCount)
+        setGridSpacingItemDecoration(b.list, spanCount)
+        b.list.layoutManager = layoutManager
+//        b.list.setHasFixedSize(true)
+        b.list.adapter = adapter
+
+        viewModel.dirs
+                .onEach {
+                    adapter.setData(it)
+                    adapter.notifyItemRangeChanged(0, it.size)
+                }
+                .launchWhileVisible()
+
+        viewModel.showEmpty
+                .onEach { showEmpty(it) }
+                .launchWhileVisible()
+
+        viewModel.showProgress
+                .onEach { if (it) showProgress() else hideProgress() }
+                .launchWhileVisible()
+
+        viewModel.showError
+                .onEach { onError(it) }
+                .launchWhileVisible()
+
+        val perms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.READ_MEDIA_VIDEO,
+            )
+        } else {
+            arrayOf(
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            )
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            viewModel.updateFiles(MediaFileLoader(requireContext()))
+            val granted = perms.all { checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED }
+            if (!granted) {
+                launchPermissionRequest.launch(perms)
+            }
+        } else {
+            perms.all { checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED }.also {
+                if (it) {
+                    viewModel.updateFiles(MediaFileLoader(requireContext()))
+                } else {
+                    launchPermissionRequest.launch(perms)
+                }
+            }
+        }
     }
 
-    @NeedsPermission(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-    fun setLoaderPreQ() {
-        presenter.updateFiles(MediaFileLoader(requireActivity()))
-    }
-
-    @NeedsPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-    fun setLoader() {
-        presenter.updateFiles(MediaFileLoader(requireActivity()))
+    override fun getViewModel(): BaseFsViewModel {
+        return viewModel
     }
 
     companion object {

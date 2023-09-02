@@ -9,7 +9,7 @@ import androidx.core.net.toUri
 import com.edwardstock.multipicker.picker.PickerConst
 import kotlinx.parcelize.Parcelize
 import java.io.File
-import java.util.*
+import java.util.Date
 
 @Parcelize
 class PickerSavePath(
@@ -40,12 +40,12 @@ class PickerSavePath(
     }
 
     companion object {
-
         @JvmField
         val DEFAULT = PickerSavePath("Camera", false)
 
         @JvmField
         val THUMBNAILS = PickerSavePath(".thumbnails", false)
+
 
         @JvmStatic
         fun newTimestampTmpFile(context: Context, extension: String, prefix: String = "camera_"): PickerSavePath {

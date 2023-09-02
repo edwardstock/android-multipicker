@@ -1,7 +1,6 @@
 package com.edwardstock.multipicker.picker.adapters
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -11,7 +10,6 @@ import com.edwardstock.multipicker.R
 import com.edwardstock.multipicker.data.Dir
 import com.edwardstock.multipicker.databinding.MpItemFolderBinding
 import com.edwardstock.multipicker.picker.adapters.DirsAdapter.DirViewHolder
-import java.util.*
 
 class DirsAdapter(
         private val folderClickListener: ((dir: Dir) -> Unit)?
@@ -39,7 +37,7 @@ class DirsAdapter(
                 .into(holder.b.image)
         holder.b.tvName.text = mDirs[position].name
         holder.b.tvNumber.text = mDirs[position].files.size.toString()
-        holder.itemView.setOnClickListener { v: View? -> folderClickListener?.invoke(dir) }
+        holder.itemView.setOnClickListener { folderClickListener?.invoke(dir) }
     }
 
     fun setData(folders: List<Dir>?) {

@@ -1,81 +1,73 @@
 package com.edwardstock.multipicker.picker.ui
 
-import android.content.Context
+import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.edwardstock.multipicker.internal.MediaFileLoader
 import com.edwardstock.multipicker.internal.PickerSavePath
 import com.edwardstock.multipicker.internal.helpers.DisplayHelper.dpToPx
 import com.edwardstock.multipicker.internal.widgets.GridSpacingItemDecoration
-import com.edwardstock.multipicker.picker.views.BaseFsPresenter
+import com.edwardstock.multipicker.picker.views.BaseFsViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.launchIn
 import timber.log.Timber
-import java.lang.ref.WeakReference
 
 /**
  * android-multipicker. 2018
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
 abstract class PickerFileSystemFragment : Fragment() {
-    private var mGridSpacingItemDecoration: GridSpacingItemDecoration? = null
-    private var mActivity: WeakReference<PickerActivity?>? = null
+    private var gridSpacingItemDecoration: GridSpacingItemDecoration? = null
+    private val runningJobs = ArrayList<Job>()
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        mActivity = WeakReference(activity as PickerActivity?)
+    protected fun addOnBackCallback(callback: () -> Unit) {
+        requireActivity().onBackPressedDispatcher.addCallback(
+                viewLifecycleOwner,
+                object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() {
+                        callback()
+                    }
+                })
     }
 
-    override fun onStart() {
-        super.onStart()
-        mActivity = WeakReference(activity as PickerActivity?)
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        Timber.d("Destroy fragment view")
-        if (mActivity != null) {
-            mActivity!!.clear()
-            mActivity = null
-        }
+    protected fun <T> Flow<T>.launchWhileVisible(): Job {
+        val job = launchIn(lifecycleScope)
+        runningJobs.add(job)
+        return job
     }
 
     fun updateFiles() {
-        getPresenter().updateFiles(MediaFileLoader(requireActivity()))
+        Timber.d("Update files")
+        getViewModel().updateFiles(MediaFileLoader(requireActivity()))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateFiles()
+        Timber.d("${this::class} On resume fragment")
     }
 
     open fun onBackPressed() {
         Timber.d("On back pressed fragment")
     }
 
-    protected fun hasActivity(): Boolean {
-        if (mActivity == null || mActivity!!.get() == null) {
-            return false
-        }
-        val activity = mActivity!!.get()
-        return activity != null
-    }
-
     protected fun safeActivity(callback: (PickerActivity) -> Unit) {
-        if (mActivity == null || mActivity!!.get() == null) {
-            Timber.d("Activity already unavailable")
-            return
-        }
-        val activity = mActivity!!.get()
-        if (activity != null) {
-            callback(activity)
-        }
+        activity?.let { callback(it as PickerActivity) }
     }
 
     protected fun setGridSpacingItemDecoration(list: RecyclerView, spanCount: Int) {
         Timber.d("Set grid spacing")
-        if (mGridSpacingItemDecoration != null) {
-            list.removeItemDecoration(mGridSpacingItemDecoration!!)
+        if (gridSpacingItemDecoration != null) {
+            list.removeItemDecoration(gridSpacingItemDecoration!!)
         }
-        mGridSpacingItemDecoration = GridSpacingItemDecoration(spanCount, dpToPx(requireContext(), 1), false)
-        list.addItemDecoration(mGridSpacingItemDecoration!!)
+        gridSpacingItemDecoration = GridSpacingItemDecoration(spanCount, dpToPx(requireContext(), 1), false)
+        list.addItemDecoration(gridSpacingItemDecoration!!)
     }
 
     open val capturedSavePath: PickerSavePath?
         get() = null
 
-    protected abstract fun getPresenter(): BaseFsPresenter<*>
+    protected abstract fun getViewModel(): BaseFsViewModel
 }

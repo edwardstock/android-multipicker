@@ -1,7 +1,6 @@
 package com.edwardstock.multipicker.picker.ui
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.os.Parcelable
@@ -13,6 +12,8 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import androidx.annotation.PluralsRes
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.selection.ItemKeyProvider
 import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.selection.StorageStrategy
@@ -34,9 +35,12 @@ import com.edwardstock.multipicker.picker.PickerConst
 import com.edwardstock.multipicker.picker.adapters.FilesAdapter
 import com.edwardstock.multipicker.picker.adapters.MediaFileDetailsLookup
 import com.edwardstock.multipicker.picker.adapters.MediaFileKeyProvider
-import com.edwardstock.multipicker.picker.views.BaseFsPresenter
-import com.edwardstock.multipicker.picker.views.FilesPresenter
+import com.edwardstock.multipicker.picker.getParcelableCompat
+import com.edwardstock.multipicker.picker.views.BaseFsViewModel
 import com.edwardstock.multipicker.picker.views.FilesView
+import com.edwardstock.multipicker.picker.views.FilesViewModel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import timber.log.Timber
 import java.io.File
 import java.util.*
@@ -46,37 +50,29 @@ import java.util.*
  * @author Eduard Maximovich [edward.vstock@gmail.com]
  */
 class FilesFragment : PickerFileSystemFragment(), FilesView {
-    var presenter: FilesPresenter? = null
+    private val viewModel: FilesViewModel by viewModels()
+
     private lateinit var b: MpFragmentFilesystemBinding
     private var selectionTracker: SelectionTracker<MediaFile>? = null
-    private var mLastSelectionState = false
-    private var mDir: Dir? = null
-    private lateinit var mConfig: PickerConfig
-    private val mSelected: MutableList<MediaFile> = ArrayList<MediaFile>(10)
-    private var mLastPreview: MediaFile? = null
-    private var mListState: Parcelable? = null
+    private var lastSelectionState = false
+    private var choosenDir: Dir? = null
+    private lateinit var config: PickerConfig
+    private val selectedFiles: MutableList<MediaFile> = ArrayList<MediaFile>(10)
+    private var lastPreview: MediaFile? = null
+    private var listState: Parcelable? = null
+
+
+    private lateinit var adapter: FilesAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //        setRetainInstance(true);
-        if (presenter != null) {
-            presenter!!.onRestoreSavedState(savedInstanceState)
-        }
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (presenter == null) {
-            presenter = FilesPresenter()
-            presenter!!.attachToLifecycle(this)
-            presenter!!.attachView(this)
-        }
-
+        viewModel.onRestoreSavedState(savedInstanceState)
     }
 
     override fun onStop() {
         super.onStop()
         if (b.list.layoutManager != null) {
-            mListState = b.list.layoutManager!!.onSaveInstanceState()
+            listState = b.list.layoutManager!!.onSaveInstanceState()
         }
     }
 
@@ -84,18 +80,16 @@ class FilesFragment : PickerFileSystemFragment(), FilesView {
         if (selectionTracker != null) {
             selectionTracker!!.onSaveInstanceState(outState)
         }
-        if (presenter != null) {
-            presenter!!.onSaveInstanceState(outState)
-        }
+        viewModel.onSaveInstanceState(outState)
         if (b.list.layoutManager != null) {
-            mListState = b.list.layoutManager!!.onSaveInstanceState()
-            outState.putParcelable(LIST_STATE, mListState)
+            listState = b.list.layoutManager!!.onSaveInstanceState()
+            outState.putParcelable(LIST_STATE, listState)
         }
         super.onSaveInstanceState(outState)
     }
 
     override fun onPause() {
-        if (mConfig.limit > 0) {
+        if (config.limit > 0) {
             safeActivity { act: PickerActivity -> act.b.toolbar.subtitle = null }
         }
         super.onPause()
@@ -103,8 +97,8 @@ class FilesFragment : PickerFileSystemFragment(), FilesView {
 
     override fun onResume() {
         super.onResume()
-        b.list.layoutManager!!.onRestoreInstanceState(mListState)
-        if (mConfig.limit > 0) {
+        b.list.layoutManager!!.onRestoreInstanceState(listState)
+        if (config.limit > 0) {
             setSubtitle()
         }
     }
@@ -112,31 +106,93 @@ class FilesFragment : PickerFileSystemFragment(), FilesView {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         b = MpFragmentFilesystemBinding.inflate(inflater, container, false)
 
-        mDir = requireArguments().getParcelable(PickerConst.EXTRA_DIR)
-        mConfig = requireArguments().getParcelable(PickerConst.EXTRA_CONFIG)!!
+        choosenDir = requireArguments().getParcelableCompat(PickerConst.EXTRA_DIR)
+        config = requireArguments().getParcelableCompat(PickerConst.EXTRA_CONFIG)!!
 
-        presenter!!.handleExtras(requireArguments())
-        presenter!!.updateFiles(MediaFileLoader(requireContext()))
+        viewModel.handleExtras(requireArguments())
         if (selectionTracker != null) {
             selectionTracker!!.onRestoreInstanceState(savedInstanceState)
         }
         return b.root
     }
 
-    override fun getPresenter(): BaseFsPresenter<*> {
-        return presenter!!
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        adapter = FilesAdapter(config, null) { file: MediaFile, _: Boolean, sharedView: View ->
+//            onFileClick(file, isSelected, sharedView)
+            startPreview(file, sharedView)
+        }
+        initAdapter(adapter)
+
+
+        viewModel.filesToDelete
+                .onEach {
+                    it.forEach { file -> removeFileFromMediaDB(file) }
+                }
+                .launchIn(lifecycleScope)
+
+        viewModel.files
+                .onEach {
+                    adapter.setData(it)
+                    adapter.notifyItemRangeChanged(0, it.size)
+                }
+                .launchWhileVisible()
+
+        viewModel.showProgress
+                .onEach { if (it) showProgress() else hideProgress() }
+                .launchWhileVisible()
+
+//        viewModel.showEmpty
+//                .onEach { if(it) showEmpty() else hideEmpty() }
+//                .launchWhileVisible()
+
+        viewModel.showError
+                .onEach {
+                    Timber.e(it)
+                }
+                .launchWhileVisible()
+
+        viewModel.scrollTo
+                .onEach {
+                    b.list.layoutManager?.scrollToPosition(it)
+                }
+                .launchWhileVisible()
+
+        viewModel.selectionSubmitEnabled
+                .onEach { setSelectionSubmitEnabled(it) }
+                .launchWhileVisible()
+
+        viewModel.selectionTitle
+                .onEach {
+                    when {
+                        it.plural == -1 -> setSelectionTitle(it.title)
+                        it.plural > -1 -> setSelectionTitleN(it.title, it.plural)
+                        it.title2 != -1 && it.plural2 != -1 -> this.setSelectionTitlePhotosAndVideos(it.title, it.plural, it.title2, it.plural2)
+                    }
+                }
+                .launchWhileVisible()
+
+        viewModel.updateFiles(MediaFileLoader(requireContext()))
+
+        setOnSelectionClearListener { clearSelection() }
+        setOnSelectionDoneListener { finishWithResult() }
     }
 
-    override fun setAdapter(adapter: RecyclerView.Adapter<*>) {
+    override fun getViewModel(): BaseFsViewModel {
+        return viewModel
+    }
+
+    fun initAdapter(adapter: FilesAdapter) {
         Timber.d("Set adapter from fragment")
         val isTablet = resources.getBoolean(R.bool.mp_isTablet)
-        var spanCount: Int = if (isTablet) mConfig.fileColumnsTablet else mConfig.fileColumns
+        var spanCount: Int = if (isTablet) config.fileColumnsTablet else config.fileColumns
         if (activity != null) {
             val rot = DisplayHelper.getRotation(requireActivity())
             spanCount = if (rot == Surface.ROTATION_90 || rot == Surface.ROTATION_180) {
-                (if (isTablet) mConfig.fileColumnsTablet else mConfig.fileColumns) + 1
+                (if (isTablet) config.fileColumnsTablet else config.fileColumns) + 1
             } else {
-                if (isTablet) mConfig.fileColumnsTablet else mConfig.fileColumns
+                if (isTablet) config.fileColumnsTablet else config.fileColumns
             }
         }
         val layoutManager = GridLayoutManager(context, spanCount)
@@ -144,14 +200,14 @@ class FilesFragment : PickerFileSystemFragment(), FilesView {
         b.list.layoutManager = layoutManager
         b.list.adapter = adapter
         b.list.itemAnimator = null
-        layoutManager.onRestoreInstanceState(mListState)
+        layoutManager.onRestoreInstanceState(listState)
         b.list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                 super.onScrollStateChanged(recyclerView, newState)
-                (adapter as FilesAdapter).setIsScrolling(newState != RecyclerView.SCROLL_STATE_IDLE)
+                adapter.setIsScrolling(newState != RecyclerView.SCROLL_STATE_IDLE)
             }
         })
-        val filesAdapter: FilesAdapter = adapter as FilesAdapter
+        val filesAdapter: FilesAdapter = adapter
         if (selectionTracker != null) {
             Timber.d("Reusing tracker")
             filesAdapter.setSelectionTracker(selectionTracker)
@@ -173,7 +229,7 @@ class FilesFragment : PickerFileSystemFragment(), FilesView {
         )
                 .withSelectionPredicate(object : SelectionTracker.SelectionPredicate<MediaFile>() {
                     override fun canSetStateForKey(mediaFile: MediaFile, nextState: Boolean): Boolean {
-                        return mConfig.limit <= 0 || mSelected.size != mConfig.limit || mSelected.contains(mediaFile)
+                        return config.limit <= 0 || selectedFiles.size != config.limit || selectedFiles.contains(mediaFile)
                     }
 
                     override fun canSetStateAtPosition(position: Int, nextState: Boolean): Boolean {
@@ -186,27 +242,27 @@ class FilesFragment : PickerFileSystemFragment(), FilesView {
                 })
                 .build()
 
-        selectionTracker!!.addObserver(object : SelectionTracker.SelectionObserver<MediaFile?>() {
+        selectionTracker?.addObserver(object : SelectionTracker.SelectionObserver<MediaFile?>() {
             override fun onItemStateChanged(key: MediaFile, selected: Boolean) {
                 super.onItemStateChanged(key, selected)
-                presenter!!.setSelection(selectionTracker!!.selection.toList())
-                mSelected.clear()
-                mSelected.addAll(selectionTracker!!.selection.toList())
+                viewModel.setSelection(selectionTracker!!.selection.toList())
+                selectedFiles.clear()
+                selectedFiles.addAll(selectionTracker!!.selection.toList())
                 setSubtitle()
                 val hasSelection: Boolean = selectionTracker!!.hasSelection()
-                if (mLastSelectionState != hasSelection) {
-                    mLastSelectionState = hasSelection
-                    filesAdapter.notifyItemRangeChanged(0, adapter.getItemCount())
+                if (lastSelectionState != hasSelection) {
+                    lastSelectionState = hasSelection
+                    filesAdapter.notifyItemRangeChanged(0, adapter.itemCount)
                 }
             }
 
             override fun onSelectionRestored() {
                 super.onSelectionRestored()
                 val hasSelection: Boolean = selectionTracker!!.hasSelection()
-                presenter!!.setSelection(selectionTracker!!.selection.toList())
-                if (mLastSelectionState != hasSelection) {
-                    mLastSelectionState = hasSelection
-                    filesAdapter.notifyItemRangeChanged(0, adapter.getItemCount())
+                viewModel.setSelection(selectionTracker!!.selection.toList())
+                if (lastSelectionState != hasSelection) {
+                    lastSelectionState = hasSelection
+                    filesAdapter.notifyItemRangeChanged(0, adapter.itemCount)
                 }
             }
         })
@@ -249,21 +305,22 @@ class FilesFragment : PickerFileSystemFragment(), FilesView {
         selectionTracker!!.addObserver(observer)
     }
 
-    override fun showEmpty() {}
     override fun startPreview(file: MediaFile, sharedView: View) {
-        mLastPreview = file
-        safeActivity { act: PickerActivity -> act.startPreview(mDir, file, sharedView) }
+        lastPreview = file
+        safeActivity { act: PickerActivity -> act.startPreview(choosenDir, file, sharedView) }
     }
 
     override fun clearSelection() {
         if (selectionTracker != null) {
             selectionTracker!!.clearSelection()
-            mLastSelectionState = false
+            lastSelectionState = false
         }
     }
 
     override fun finishWithResult() {
-        safeActivity { act: PickerActivity -> act.submitResult(selectionTracker!!.selection.toList()) }
+        safeActivity { act: PickerActivity ->
+            act.submitResult(selectionTracker?.selection?.toList() ?: emptyList())
+        }
     }
 
     override fun showProgress() {
@@ -308,14 +365,6 @@ class FilesFragment : PickerFileSystemFragment(), FilesView {
         }
     }
 
-    override fun scrollTo(position: Int) {
-//        if(list != null) {
-//            list.post(()->{
-//                list.smoothScrollToPosition(position);
-//            });
-//        }
-    }
-
     override fun removeFileFromMediaDB(file: File) {
         safeActivity { act: PickerActivity ->
             Timber.d("Remove file: %s as it doesn't exists", file.absoluteFile)
@@ -341,20 +390,16 @@ class FilesFragment : PickerFileSystemFragment(), FilesView {
         safeActivity { act: PickerActivity -> act.onError(t) }
     }
 
-    override fun startUpdateFiles() {
-        presenter!!.updateFiles(MediaFileLoader(requireContext()))
-    }
-
     override val capturedSavePath: PickerSavePath?
-        get() = if (mDir != null) {
-            PickerSavePath(mDir!!.name!!)
+        get() = if (choosenDir != null) {
+            PickerSavePath(choosenDir!!.name!!)
         } else {
             super.capturedSavePath
         }
 
     private fun setSubtitle() {
-        if (mConfig.limit > 0) {
-            safeActivity { act: PickerActivity -> act.b.toolbar.subtitle = String.format(Locale.getDefault(), "%d / %d", selectionTracker!!.selection.size(), mConfig.limit) }
+        if (config.limit > 0) {
+            safeActivity { act: PickerActivity -> act.b.toolbar.subtitle = String.format(Locale.getDefault(), "%d / %d", selectionTracker!!.selection.size(), config.limit) }
         }
     }
 

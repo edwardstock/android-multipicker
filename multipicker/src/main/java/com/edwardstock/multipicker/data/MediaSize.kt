@@ -9,8 +9,8 @@ import kotlinx.parcelize.Parcelize
  */
 @Parcelize
 class MediaSize(
-        var width: Int = 0,
-        var height: Int = 0
+        var width: Long = 0,
+        var height: Long = 0
 ) : Parcelable {
 
     constructor(width: String?, height: String?) : this() {
@@ -19,7 +19,7 @@ class MediaSize(
             this.height = 0
             return
         }
-        this.width = width.toInt()
-        this.height = height.toInt()
+        this.width = width.toLong()
+        this.height = height.toLong()
     }
 }

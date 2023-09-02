@@ -30,13 +30,18 @@ class PickerConfig(
          * Selection limit. By default 0=infinite selection
          */
         var limit: Int = 0,
-        var excludedFiles: MutableList<String> = ArrayList(0)
+        var excludedFiles: MutableList<String> = ArrayList(0),
+        /**
+         * Copy unreadable files to external cache directory to have ability to read them outside
+         */
+        @Deprecated("Use Uri and MediaStore API instead of File. See `MediaFile.uri`")
+        var copyUnreadableFilesToCache: Boolean = true
 ) : Parcelable {
 
     fun excludeFile(file: MediaFile?): PickerConfig {
-        if (file?.path == null) return this
+        if (file?.uri == null) return this
 
-        excludedFiles.add(file.path!!)
+        excludedFiles.add(file.uri)
         return this
     }
 
@@ -63,7 +68,7 @@ class PickerConfig(
 
     fun excludeFiles(files: List<MediaFile?>): PickerConfig {
         excludedFiles.addAll(
-                files.filterNotNull().filter { it.path != null }.map { it.path!! }
+                files.filterNotNull().filter { it.uri != null }.map { it.uri }
         )
         return this
     }

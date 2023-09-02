@@ -5,40 +5,47 @@ import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
-import androidx.transition.*
+import androidx.lifecycle.lifecycleScope
+import androidx.transition.ChangeBounds
+import androidx.transition.ChangeClipBounds
+import androidx.transition.ChangeImageTransform
+import androidx.transition.Fade
+import androidx.transition.TransitionSet
 import com.edwardstock.multipicker.PickerConfig
 import com.edwardstock.multipicker.R
 import com.edwardstock.multipicker.data.Dir
 import com.edwardstock.multipicker.data.MediaFile
 import com.edwardstock.multipicker.databinding.MpActivityPickerBinding
+import com.edwardstock.multipicker.internal.MultiPickerFileProvider
 import com.edwardstock.multipicker.internal.PickerSavePath
 import com.edwardstock.multipicker.internal.PickerUtils
 import com.edwardstock.multipicker.internal.views.ErrorView
 import com.edwardstock.multipicker.picker.PickerConst
-import com.edwardstock.multipicker.picker.views.PickerPresenter
+import com.edwardstock.multipicker.picker.getParcelableArrayListExtraCompat
+import com.edwardstock.multipicker.picker.getParcelableCompat
 import com.edwardstock.multipicker.picker.views.PickerView
-import permissions.dispatcher.NeedsPermission
-import permissions.dispatcher.RuntimePermissions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
 import java.lang.ref.WeakReference
@@ -54,42 +61,47 @@ val capturePerms: Array<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_COD
     arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
 }
 
-@RuntimePermissions
 class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
     lateinit var b: MpActivityPickerBinding
-    private lateinit var presenter: PickerPresenter
-    private var mConfig: PickerConfig? = null
-    private var mFragment: PickerFileSystemFragment? = null
+    private var config: PickerConfig? = null
+    private var fragment: PickerFileSystemFragment? = null
 
     private var takePictureLauncher: ActivityResultLauncher<Uri>? = null
     private var takePictureFile: PickerSavePath? = null
     private var takeVideoLauncher: ActivityResultLauncher<Uri>? = null
     private var takeVideoFile: PickerSavePath? = null
 
-    override fun capturePhotoWithPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            capturePhotoWithPermissionCheck()
+    private enum class CaptureType {
+        Photo, Video
+    }
+
+    private var captureType: CaptureType? = null
+
+    private val launchPermissionRequest = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        val granted = permissions.entries.all { it.value }
+        if (granted) {
+            when (captureType) {
+                CaptureType.Photo -> capturePhotoInternal()
+                CaptureType.Video -> captureVideoInternal()
+                else -> Unit
+            }
         } else {
-            capturePhotoPreQWithPermissionCheck()
+            when (captureType) {
+                CaptureType.Photo -> Toast.makeText(this, R.string.mp_error_create_image_file, Toast.LENGTH_LONG).show()
+                CaptureType.Video -> Toast.makeText(this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show()
+                else -> Unit
+            }
         }
+    }
+
+    override fun capturePhotoWithPermissions() {
+        captureType = CaptureType.Photo
+        launchPermissionRequest.launch(capturePerms)
     }
 
     override fun captureVideoWithPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            captureVideoWithPermissionCheck()
-        } else {
-            captureVideoPreQWithPermissionCheck()
-        }
-    }
-
-    @NeedsPermission(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-    fun capturePhotoPreQ() {
-        capturePhotoInternal()
-    }
-
-    @NeedsPermission(Manifest.permission.CAMERA)
-    fun capturePhoto() {
-        capturePhotoInternal()
+        captureType = CaptureType.Video
+        launchPermissionRequest.launch(capturePerms)
     }
 
     private fun capturePhotoInternal() {
@@ -102,16 +114,6 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
         }
     }
 
-    @NeedsPermission(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-    fun captureVideoPreQ() {
-        captureVideoInternal()
-    }
-
-    @NeedsPermission(Manifest.permission.CAMERA)
-    fun captureVideo() {
-        captureVideoInternal()
-    }
-
     private fun captureVideoInternal() {
         try {
             takeVideoFile = PickerSavePath.newTimestampTmpFile(this, "mp4")
@@ -122,17 +124,24 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
         }
     }
 
-    private fun onTakenPicture(saved: Boolean) {
+    private fun onCapturedPhoto(saved: Boolean) {
         if (!saved) {
             Toast.makeText(this, R.string.mp_error_create_image_file, Toast.LENGTH_LONG).show()
         } else {
-            val mf = MediaFile(path = takePictureFile!!.toFile(this)!!.absolutePath)
+            val file = takePictureFile!!.toFile(this)!!
+            val uri = FileProvider.getUriForFile(this, MultiPickerFileProvider.getAuthority(this), file)
+            val mf = MediaFile(
+                    0,
+                    file.name,
+                    file.absolutePath,
+                    uri
+            )
             try {
                 PickerUtils.writeCapturedMedia(this, mf)
-                Handler(Looper.getMainLooper()).postDelayed({
+                lifecycleScope.launch {
                     takePictureFile = null
-                    presenter.onTakenMediaReady()
-                }, 300)
+                    startUpdateFiles()
+                }
             } catch (e: Throwable) {
                 Timber.e(e)
                 Toast.makeText(this, R.string.mp_error_create_image_file, Toast.LENGTH_LONG).show()
@@ -140,28 +149,41 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
         }
     }
 
-    private fun onTakenVideo(preview: Bitmap?) {
-        val mf = MediaFile(path = takeVideoFile!!.toFile(this)!!.absolutePath)
-        if (mf.file?.exists() == false || mf.file?.length() == 0L) {
+    private fun onCapturedVideo(captured: Boolean) {
+        if (captured) {
+            val file = takeVideoFile!!.toFile(this)!!
+            val uri = FileProvider.getUriForFile(this, MultiPickerFileProvider.getAuthority(this), file)
+
+            val mf = MediaFile(
+                    0,
+                    file.name,
+                    file.absolutePath,
+                    uri
+            )
+            if (!mf.uri.exists() || mf.uri.length() == 0L) {
+                Toast.makeText(this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show()
+                Timber.w("Unable to handle recorded video: file not exists or is empty")
+                return
+            }
+
+            try {
+                PickerUtils.writeCapturedMedia(this, mf)
+                lifecycleScope.launch {
+                    takeVideoFile = null
+                    startUpdateFiles()
+                }
+            } catch (e: Throwable) {
+                Timber.e(e)
+                Toast.makeText(this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show()
+            }
+        } else {
             Toast.makeText(this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show()
-            Timber.w("Unable to handle recorded video: file not exists or is empty")
-            return
         }
 
-        try {
-            PickerUtils.writeCapturedMedia(this, mf)
-            Handler(Looper.getMainLooper()).postDelayed({
-                takeVideoFile = null
-                presenter.onTakenMediaReady()
-            }, 300)
-        } catch (e: Throwable) {
-            Timber.e(e)
-            Toast.makeText(this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show()
-        }
     }
 
     override fun scanMedia(file: MediaFile, listener: MediaScannerConnection.OnScanCompletedListener) {
-        val paths = arrayOf(file.path)
+        val paths = arrayOf(file.uri)
         val mimeTypes = arrayOf(if (file.isVideo) "video/mp4" else "image/jpeg")
         MediaScannerConnection.scanFile(applicationContext, paths, mimeTypes, listener)
     }
@@ -175,8 +197,9 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
     }
 
     override fun startUpdateFiles() {
-        Timber.d("Update files: Fragment: %s", mFragment.toString())
-        mFragment?.updateFiles()
+        if (fragment != null && fragment?.isAdded == true) {
+            fragment?.updateFiles()
+        }
     }
 
     fun setupToolbar(toolbar: Toolbar) {
@@ -187,29 +210,29 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
-            onBackPressed()
+            onBackPressedDispatcher.onBackPressed()
             return true
         }
         if (item.itemId == R.id.menu_camera) {
-            presenter.handleCapturePhoto()
+            capturePhotoWithPermissions()
             return true
         } else if (item.itemId == R.id.menu_video) {
-            presenter.handleCaptureVideo()
+            captureVideoWithPermissions()
             return true
         }
         return super.onOptionsItemSelected(item)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        if (mConfig == null) {
+        if (config == null) {
             return true
         }
-        if (mConfig!!.isEnableCamera) {
-            if (mConfig!!.isShowPhotos && mConfig!!.isShowVideos) {
+        if (config!!.isEnableCamera) {
+            if (config!!.isShowPhotos && config!!.isShowVideos) {
                 menuInflater.inflate(R.menu.mp_image_picker_menu_all_main, menu)
-            } else if (mConfig!!.isShowVideos) {
+            } else if (config!!.isShowVideos) {
                 menuInflater.inflate(R.menu.mp_image_picker_menu_video_main, menu)
-            } else if (mConfig!!.isShowPhotos) {
+            } else if (config!!.isShowPhotos) {
                 menuInflater.inflate(R.menu.mp_image_picker_menu_photo_main, menu)
             }
         }
@@ -217,94 +240,82 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        presenter = PickerPresenter()
-        presenter.attachToLifecycle(this)
-        presenter.attachView(this)
         super.onCreate(savedInstanceState)
-//        checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).absolutePath)
-//        checkFiles(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).absolutePath)
-        mConfig = intent?.getParcelableExtra(PickerConst.EXTRA_CONFIG)
-        presenter.onRestoreSavedState(savedInstanceState)
+
+        onBackPressedDispatcher.addCallback(this, true) {
+            handleBackPress()
+        }
+        config = intent?.getParcelableCompat(PickerConst.EXTRA_CONFIG)
         b = MpActivityPickerBinding.inflate(layoutInflater)
         setContentView(b.root)
         setResult(RESULT_CANCELED)
         setupToolbar(b.toolbar)
-        mFragment = DirsFragment.newInstance(mConfig)
-        if (mConfig!!.title != null) {
-            b.toolbar.title = mConfig!!.title
+        b.toolbar.setNavigationOnClickListener {
+            handleBackPress()
         }
 
-        if (mConfig!!.isShowPhotos && mConfig!!.isShowVideos) {
-            takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture(), this::onTakenPicture)
-            takeVideoLauncher = registerForActivityResult(ActivityResultContracts.TakeVideo(), this::onTakenVideo)
-        } else if (mConfig!!.isShowVideos) {
-            takeVideoLauncher = registerForActivityResult(ActivityResultContracts.TakeVideo(), this::onTakenVideo)
-        } else if (mConfig!!.isShowPhotos) {
-            takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture(), this::onTakenPicture)
+        if (config?.title != null) {
+            b.toolbar.title = config?.title
         }
 
-        supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.mp_container, mFragment!!, mFragment!!.javaClass.simpleName)
-                .addToBackStack(null)
-                .commit()
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        // get fragment presenter
-        if (mFragment is ImageViewerFragment) {
-            supportFragmentManager.popBackStack()
+        if (config?.isShowPhotos == true && config?.isShowVideos == true) {
+            takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture(), this::onCapturedPhoto)
+            takeVideoLauncher = registerForActivityResult(ActivityResultContracts.CaptureVideo(), this::onCapturedVideo)
+        } else if (config?.isShowVideos == true) {
+            takeVideoLauncher = registerForActivityResult(ActivityResultContracts.CaptureVideo(), this::onCapturedVideo)
+        } else if (config?.isShowPhotos == true) {
+            takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture(), this::onCapturedPhoto)
         }
-        resolveLastFragment()
-        presenter.handleExtras(requestCode, resultCode, data)
-        mFragment!!.onActivityResult(requestCode, resultCode, data)
-    }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        presenter.onSaveInstanceState(outState)
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        onRequestPermissionsResult(requestCode, grantResults)
-    }
-
-    override fun onBackPressed() {
-        if (mFragment != null) {
-            mFragment!!.onBackPressed()
+        if (savedInstanceState == null) {
+            // If there is no saved instance state, create a new Fragment
+            fragment = DirsFragment.newInstance(config)
+            Timber.d("Show DirsFragment")
+            supportFragmentManager
+                    .beginTransaction()
+                    .replace(R.id.mp_container, fragment!!, "files_fragment")
+                    .addToBackStack(null)
+                    .commit()
+        } else {
+            // If there is a saved instance state, get the Fragment by its tag
+            fragment = supportFragmentManager.findFragmentByTag("files_fragment") as PickerFileSystemFragment
+            Timber.d("Show ${fragment!!::class.simpleName} fragment from saved instance state")
         }
+    }
+
+    private fun handleBackPress() {
+        fragment?.onBackPressed()
         var addedFile: MediaFile? = null
-        if (mFragment is ImageViewerFragment) {
-            addedFile = (mFragment as ImageViewerFragment).addedFile
+        if (fragment is ImageViewerFragment) {
+            addedFile = (fragment as ImageViewerFragment).addedFile
         }
         if (supportFragmentManager.backStackEntryCount <= 1) {
             setResult(RESULT_CANCELED)
             finish()
-            return
-        }
-        super.onBackPressed()
-        resolveLastFragment()
-        if (mFragment is FilesFragment) {
-            (mFragment as FilesFragment).addSelection(addedFile)
+        } else {
+            resolveLastFragment()
+            if (fragment is FilesFragment) {
+                (fragment as FilesFragment).addSelection(addedFile)
+            }
+            supportFragmentManager.popBackStack()
         }
     }
 
     fun startFiles(dir: Dir?) {
-        val fragment = FilesFragment.newInstance(mConfig, dir)
+        val fragment = FilesFragment.newInstance(config, dir)
+        Timber.d("Show FilesFragment")
         supportFragmentManager
                 .beginTransaction()
-                .replace(R.id.mp_container, fragment, fragment.javaClass.simpleName)
+                .replace(R.id.mp_container, fragment, "files_fragment")
                 .addToBackStack(null)
                 .commit()
-        mFragment = fragment
+        this.fragment = fragment
     }
 
     fun startPreview(dir: Dir?, file: MediaFile, sharedView: View?) {
         if (file.isVideo) {
-            val intent = Intent(Intent.ACTION_VIEW, file.uri!!)
-            intent.setDataAndType(file.uri!!, "video/*")
+            val intent = Intent(Intent.ACTION_VIEW, file.uri)
+            intent.setDataAndType(file.uri, "video/*")
             startActivity(intent)
         } else {
             val fragment = ImageViewerFragment.newInstance(dir, file)
@@ -312,7 +323,7 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
                     .beginTransaction()
                     .replace(R.id.mp_container, fragment, fragment.javaClass.simpleName)
 
-            if (sharedView != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (sharedView != null) {
                 tx.addSharedElement(sharedView, sharedView.transitionName)
                 val sharedSet = TransitionSet()
                 sharedSet.addTransition(ChangeImageTransform())
@@ -327,15 +338,50 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
                 fragment.returnTransition = commonSet
             }
             tx.addToBackStack(null).commit()
-            mFragment = fragment
+            this.fragment = fragment
         }
     }
 
-    fun submitResult(files: List<MediaFile>?) {
+    fun submitResult(files: List<MediaFile>) {
         val intent = Intent()
-        intent.putParcelableArrayListExtra(PickerConst.EXTRA_RESULT_FILES, ArrayList(files))
-        setResult(RESULT_OK, intent)
-        finish()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && config?.copyUnreadableFilesToCache == true) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                files
+                        .filter { !it.uri.canRead() }
+                        .forEach { source ->
+                            val mediaPath = File(externalCacheDir, MultiPickerFileProvider.EXT_CACHE_DIR).also { it.mkdirs() }
+                            val mediaFile = File(mediaPath, source.name)
+
+                            // if target file does not exists OR it does but length isn't the same
+                            if (mediaFile.exists().not() || mediaFile.length() != source.size) {
+                                mediaFile.delete()
+                                Timber.d("Copy ${source.uri} to local cache")
+
+                                mediaFile.createNewFile()
+                                contentResolver.openInputStream(source.uri)?.use { inputStream ->
+                                    mediaFile.outputStream().use { outputStream ->
+                                        inputStream.copyTo(outputStream)
+                                    }
+                                }
+
+                                val contentUri: Uri = FileProvider.getUriForFile(this@PickerActivity, MultiPickerFileProvider.getAuthority(this@PickerActivity), mediaFile)
+                                MultiPickerFileProvider.grantFilePermissions(this@PickerActivity, contentUri, true)
+                                source.uri = mediaFile.absolutePath
+                            }
+                        }
+
+                withContext(Dispatchers.Main) {
+                    intent.putParcelableArrayListExtra(PickerConst.EXTRA_RESULT_FILES, ArrayList(files))
+                    setResult(RESULT_OK, intent)
+                    finish()
+                }
+            }
+        } else {
+            intent.putParcelableArrayListExtra(PickerConst.EXTRA_RESULT_FILES, ArrayList(files))
+            setResult(RESULT_OK, intent)
+            finish()
+        }
+
     }
 
 
@@ -370,7 +416,7 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
             val backEntry: FragmentManager.BackStackEntry = supportFragmentManager.getBackStackEntryAt(index)
             val tag = backEntry.name
             if (tag != null) {
-                mFragment = supportFragmentManager.findFragmentByTag(tag) as PickerFileSystemFragment
+                fragment = supportFragmentManager.findFragmentByTag(tag) as PickerFileSystemFragment
             }
         }
     }
@@ -389,7 +435,7 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
                     return emptyRes
                 }
 
-                return intent.getParcelableArrayListExtra(PickerConst.EXTRA_RESULT_FILES) ?: emptyRes
+                return intent.getParcelableArrayListExtraCompat(PickerConst.EXTRA_RESULT_FILES) ?: emptyRes
             }
             return emptyRes
         }

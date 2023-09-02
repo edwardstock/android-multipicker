@@ -9,6 +9,7 @@
     <string name="mp_chooser_title">Выберите фото</string>
     <string name="mp_no_content">Файлы отсутствуют</string>
     <string name="mp_choose_file">Выберите файл</string>
+    <string name="mp_error_permission_denied">Невозможно загрузить файлы так как требуется разрешение</string>
 
     <plurals name="mp_choosed_n_photos">
         <item quantity="one">Выбрано %1$d фото</item>

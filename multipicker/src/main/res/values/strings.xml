@@ -10,6 +10,7 @@
     <string name="mp_chooser_title">Choose Photo</string>
     <string name="mp_no_content">No files yet</string>
     <string name="mp_choose_file">Choose file</string>
+    <string name="mp_error_permission_denied">Cannot access to media as permissions was denied</string>
 
     <plurals name="mp_choosed_n_photos">
         <item quantity="zero">Selected %1$d photos</item>
