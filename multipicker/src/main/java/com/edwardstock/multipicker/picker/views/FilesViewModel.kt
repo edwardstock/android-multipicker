@@ -78,7 +78,7 @@ class FilesViewModel : BaseFsViewModel(), MediaFileLoader.OnLoadListener {
                 break
             }
         }
-        if (dirFiles == null || dirFiles.isEmpty()) {
+        if (dirFiles.isNullOrEmpty()) {
             dirFiles = emptyList()
         }
 

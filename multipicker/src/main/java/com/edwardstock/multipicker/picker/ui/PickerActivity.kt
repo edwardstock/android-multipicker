@@ -21,6 +21,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
@@ -347,7 +348,7 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && config?.copyUnreadableFilesToCache == true) {
             lifecycleScope.launch(Dispatchers.IO) {
                 files
-                        .filter { !it.uri.canRead() }
+                    .filter { !it.uri.canRead() }
                         .forEach { source ->
                             val mediaPath = File(externalCacheDir, MultiPickerFileProvider.EXT_CACHE_DIR).also { it.mkdirs() }
                             val mediaFile = File(mediaPath, source.name)
@@ -366,7 +367,7 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
 
                                 val contentUri: Uri = FileProvider.getUriForFile(this@PickerActivity, MultiPickerFileProvider.getAuthority(this@PickerActivity), mediaFile)
                                 MultiPickerFileProvider.grantFilePermissions(this@PickerActivity, contentUri, true)
-                                source.uri = mediaFile.absolutePath
+                                source.uri = mediaFile.toUri()
                             }
                         }
 
