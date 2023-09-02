@@ -39,7 +39,7 @@ object PickerUtils {
         }
 
         // Create a media file name
-        var srcName = File(file.uri).name
+        var srcName = File(file.path).name
         srcName = srcName.substring(0, srcName.lastIndexOf('.'))
         val imageFileName = "thumb_$srcName"
         var imageFile: File? = null
@@ -129,7 +129,7 @@ object PickerUtils {
     }
 
     fun isVideoFormat(image: MediaFile): Boolean {
-        val mimeType = URLConnection.guessContentTypeFromName(image.uri)
+        val mimeType = URLConnection.guessContentTypeFromName(image.path)
         return mimeType != null && mimeType.startsWith("video")
     }
 
@@ -153,7 +153,7 @@ object PickerUtils {
 
     fun writeCapturedMedia(context: Context, mediaFile: MediaFile) {
         val resolver = context.applicationContext.contentResolver
-        val sourceFile = File(mediaFile.uri)
+        val sourceFile = File(mediaFile.path)
 
         val targetLibrary = if (!mediaFile.isVideo) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

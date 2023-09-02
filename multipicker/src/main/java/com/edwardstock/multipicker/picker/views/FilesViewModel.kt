@@ -84,7 +84,7 @@ class FilesViewModel : BaseFsViewModel(), MediaFileLoader.OnLoadListener {
 
         val toDelete = dirFiles
                 .filter { it.uri != null }
-                .map { File(it.uri) }
+                .map { File(it.path) }
                 .filter { !it.exists() || it.length() == 0L }
 
 

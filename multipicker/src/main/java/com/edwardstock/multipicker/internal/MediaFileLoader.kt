@@ -215,7 +215,7 @@ class MediaFileLoader(private val ctx: Context) {
                     bmp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         ctx.contentResolver.loadThumbnail(item.uri, android.util.Size(640, 640), null)
                     } else {
-                        createVideoThumbnail(item.uri) ?: continue
+                        createVideoThumbnail(item.path) ?: continue
                     }
 
                     FileOutputStream(thumbFile).use { o ->

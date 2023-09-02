@@ -27,7 +27,7 @@ import java.util.Locale
 data class MediaFile(
         var id: Long,
         var name: String,
-        @Deprecated("Use Uri and MediaStore API instead", ReplaceWith("uri"))
+        @Deprecated("Use Uri and MediaStore API instead")
         var path: String,
         var uri: Uri,
         var videoInfo: VideoInfo? = null,
@@ -44,40 +44,40 @@ data class MediaFile(
 
     val size: Long
         get() {
-            return File(uri).length()
+            return File(path).length()
         }
 
     @Deprecated(message = "Use size instead", ReplaceWith("size"))
     @IgnoredOnParcel
     val length: Long = size
 
-    @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
+    @Deprecated("Use Uri instead")
     val file: File
         get() {
-            return File(uri)
+            return File(path)
         }
 
     @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
     val pathFS: Path?
         @RequiresApi(Build.VERSION_CODES.O)
         get() {
-            return FileSystems.getDefault().getPath(uri)
+            return FileSystems.getDefault().getPath(path)
         }
 
     @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
     val uriFile: Uri?
         get() {
-            return Uri.fromFile(uri)
+            return Uri.fromFile(file)
         }
 
     @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
     val exists: Boolean
         get() {
-            return uri.exists()
+            return file.exists()
         }
 
     @Deprecated(message = "Use Uri instead", ReplaceWith("uri"))
     fun delete(): Boolean {
-        return uri.delete()
+        return file.delete()
     }
 }

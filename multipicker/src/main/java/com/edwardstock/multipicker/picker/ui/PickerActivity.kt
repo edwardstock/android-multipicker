@@ -161,7 +161,7 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
                     file.absolutePath,
                     uri
             )
-            if (!mf.uri.exists() || mf.uri.length() == 0L) {
+            if (!mf.file.exists() || mf.file.length() == 0L) {
                 Toast.makeText(this, R.string.mp_error_create_video_file, Toast.LENGTH_LONG).show()
                 Timber.w("Unable to handle recorded video: file not exists or is empty")
                 return
@@ -184,7 +184,7 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
     }
 
     override fun scanMedia(file: MediaFile, listener: MediaScannerConnection.OnScanCompletedListener) {
-        val paths = arrayOf(file.uri)
+        val paths = arrayOf(file.path)
         val mimeTypes = arrayOf(if (file.isVideo) "video/mp4" else "image/jpeg")
         MediaScannerConnection.scanFile(applicationContext, paths, mimeTypes, listener)
     }
@@ -348,7 +348,7 @@ class PickerActivity : AppCompatActivity(), PickerView, ErrorView {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && config?.copyUnreadableFilesToCache == true) {
             lifecycleScope.launch(Dispatchers.IO) {
                 files
-                    .filter { !it.uri.canRead() }
+                    .filter { !it.file.canRead() }
                         .forEach { source ->
                             val mediaPath = File(externalCacheDir, MultiPickerFileProvider.EXT_CACHE_DIR).also { it.mkdirs() }
                             val mediaFile = File(mediaPath, source.name)

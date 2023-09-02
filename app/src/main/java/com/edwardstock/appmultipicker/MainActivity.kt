@@ -39,9 +39,9 @@ class MainActivity : AppCompatActivity() {
             b.files.append(item.toString())
 //            MultiPickerFileProvider.grantFilePermissions(this, item.uri!!, true)
             b.files.append("\n")
-            b.files.append("Size? ${item.uri.length()}\n")
-            b.files.append("CanRead? ${item.uri.canRead()}\n")
-            b.files.append("CanWrite? ${item.uri.canWrite()}\n\n")
+            b.files.append("Size? ${item.file.length()}\n")
+            b.files.append("CanRead? ${item.file.canRead()}\n")
+            b.files.append("CanWrite? ${item.file.canWrite()}\n\n")
 
         }
     }

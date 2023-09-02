@@ -41,7 +41,7 @@ class PickerConfig(
     fun excludeFile(file: MediaFile?): PickerConfig {
         if (file?.uri == null) return this
 
-        excludedFiles.add(file.uri)
+        excludedFiles.add(file.path)
         return this
     }
 
@@ -68,7 +68,7 @@ class PickerConfig(
 
     fun excludeFiles(files: List<MediaFile?>): PickerConfig {
         excludedFiles.addAll(
-                files.filterNotNull().filter { it.uri != null }.map { it.uri }
+                files.filterNotNull().filter { it.path != null }.map { it.path }
         )
         return this
     }
